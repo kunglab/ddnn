@@ -1,5 +1,6 @@
 # Quick Start
     
+```python
     from elaas.elaas import Collection
     import chainer
 
@@ -35,3 +36,4 @@
     
     # generate container
     # mnist.generate_container()
+```
