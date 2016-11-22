@@ -4,7 +4,7 @@
 from elaas.elaas import Collection
 import chainer
 
-mnist = Collection("MNIST")
+mnist = Collection("MNIST",nepochs=10)
 train, test = chainer.datasets.get_mnist(ndim=3)
 
 mnist.add_trainset(train)

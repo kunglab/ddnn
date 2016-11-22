@@ -2,10 +2,10 @@ from deepopt.deepopt import DeepOptEpoch
 from .family.simple import SimpleHybridFamily
 
 class Collection:
-    def __init__(self, name):
+    def __init__(self, name, nepochs=10):
         self.name = name
         self.set_model_family(SimpleHybridFamily(prefix=self.name))
-        self.do = DeepOptEpoch()
+        self.do = DeepOptEpoch(nepochs=nepochs)
     def set_chooser(self, chooser):
         self.do.set_chooser(chooser)        
     def add_trainset(self, trainset):
