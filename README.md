@@ -26,6 +26,7 @@
     # switch chooser
     # mnist.set_chooser()
     
+    # currently optimize based on the validation accuracy of the main model
     traces = mnist.train()
     visualize(traces)
     
