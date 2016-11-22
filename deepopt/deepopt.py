@@ -27,6 +27,19 @@ class DeepOptEpoch(object):
         self.nepochs = nepochs
         self.add_param('nepochs', range(1,self.nepochs+1))
         self.traces = None
+        self.constraintfn = None
+        self.chooser = EIChooser()
+        
+    def set_chooser(self, chooser=EIChooser()):
+        self.chooser = chooser
+        
+    def set_constraints(self, constraintfn):
+        self.constraintfn = constraintfn
+        X_samples = []
+        for x in self.X_samples:
+            if constraintfn(**self.point_to_kwargs(x)):
+                X_samples.append(x)
+        self.X_samples = X_samples
         
     def add_param(self, name, values):
         self.params.append(name)
@@ -56,7 +69,7 @@ class DeepOptEpoch(object):
         self.X_samples = data['X_samples'].tolist()
         self.X = data['X'].tolist()
         self.y = data['y'].tolist()
-        self.nepochs = data['nepochs'].tolist()
+        self.nepochs = int(data['nepochs'].tolist())
         
     # deprecated
     def add_sample_points(self, **kwargs):
@@ -91,7 +104,9 @@ class DeepOptEpoch(object):
     def start_traces(self):
         self.traces = []
         
-    def sample_point(self, chooser=EIChooser()):
+    def sample_point(self):
+        chooser = self.chooser
+        
         X_samples = np.array(self.X_samples)
         y_pred, sigma = self.gp.predict(X_samples, return_std=True)
                     
@@ -119,8 +134,14 @@ class DeepOptEpoch(object):
         self.traces = None
         return traces
         
+    def point_to_kwargs(self, point):
+        data = {}
+        for k,v in enumerate(point):
+            data[self.params[k]] = v
+        return data
+    
     def get_bootstrap_points(self, bootstrap_nepochs=2):
-        points = [point for point in self.X_samples if point[0] < bootstrap_nepochs]
+        points = [self.point_to_kwargs(point) for point in self.X_samples if point[0] == bootstrap_nepochs]
         return points
     
     def get_ys(self, **kwargs):

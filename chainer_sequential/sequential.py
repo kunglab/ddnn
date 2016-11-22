@@ -6,7 +6,8 @@ import binary_link
 import binary_function
 import numpy as np
 from chainer import cuda
-
+import inspect
+        
 class Sequential(object):
     def __init__(self, weight_initializer="Normal", weight_init_std=1):
         self._layers = []
@@ -140,7 +141,6 @@ class Sequential(object):
 
     def __call__(self, x, test=False):
         b = None
-        import inspect
         for i, link in enumerate(self.links):
             if isinstance(link, Sequential):
                 b = link(x, test=test)

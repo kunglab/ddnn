@@ -1,1 +1,2 @@
 chainer
+scikit-learn
