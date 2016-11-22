@@ -13,16 +13,16 @@ mnist.add_testset(test)
 # switch model family
 # mnist.set_model_family() 
 mnist.set_searchspace(
-nfilters_embeded=[1,2],
-nlayers_embeded=[1,2],
-nfilters_cloud=[1,2],
-nlayers_cloud=[1,2],
-lr=[0.001],
-branchweight=[.1]
+    nfilters_embeded=[1,2],
+    nlayers_embeded=[1,2],
+    nfilters_cloud=[1,2],
+    nlayers_cloud=[1,2],
+    lr=[0.001],
+    branchweight=[.1]
 )
 def constraintfn(**kwargs):
-# Return true if you want to consider this point, otherwise false
-return True
+    # Return true if you want to consider this point, otherwise false
+    return True
 mnist.set_constraints(constraintfn)
 # switch chooser
 # mnist.set_chooser()
