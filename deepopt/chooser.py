@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import scipy.stats as sps
 
@@ -9,6 +10,36 @@ def get_max_epoch(do, new_point):
         X = X[X[:, i] == new_point[param]]
 
     return np.max(X[:, do.params.index('nepochs')])
+
+def compute_ts(do):
+    X_samples = np.array(do.X_samples)
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')
+        y_pred, sigma = do.gp.predict(X_samples, return_std=True)
+    X = np.array(do.X)
+
+    ts = []
+    for x in X_samples:
+        x = dict(zip(do.params, x))
+        epochs = []
+        for xi in X:
+            xi = dict(zip(do.params, xi))
+            same_model = True
+            for k in x.keys():
+                if x[k] != xi[k] and k != 'nepochs':
+                    same_model = False
+
+            if same_model:
+                epochs.append(xi['nepochs'])
+
+        start_epoch = np.max(epochs)
+        t = max(1, x['nepochs'] - start_epoch)
+        ts.append(t)
+    ts = np.array(ts)
+
+    return ts
+
 
 
 class SimpleChooser(object):
@@ -44,7 +75,7 @@ class EIChooser(object):
         else:
             return max_idx
 
-# TODO: ADD OUR CHOOSER HERE. KEEP STATE INSIDE CHOOSER. PASSINGIN PARAMS FROM OUTSIDE AS LITTLE AS POSSIBLE
+
 class GridChooser(object):
     def __init__(self):
         self.init = False
@@ -69,4 +100,43 @@ class GridChooser(object):
         return self.gen.next()
 
 
-# TODO: ADD NP EPOCH GP CHOOSER etc...
+class EpochChooser(EIChooser):
+    def __init__(self, k=5, **kwargs):
+        super(EpochChooser, self).__init__(**kwargs)
+        self.k = k
+
+    def choose(self, do, y_pred, sigma, return_values=False):
+        traces = do.get_traces()
+        traces = [t for t in traces if t['action'] == 'add_point']
+        if len(traces) == 0:
+            curr_point = None
+        else:
+            curr_point = dict(zip(do.params, traces[-1]['x']))
+
+        X_samples = np.array(do.X_samples)
+        X = np.array(do.X)
+        ts = compute_ts(do)
+        ei = self.get_ei(do, y_pred, sigma, ts=ts)
+        ei = np.array(ei)
+        top_idxs = np.argsort(ei)[::-1][:self.k]
+        max_epoch, best_idx = 0, 0
+        for idx in top_idxs:
+            new_point = dict(zip(do.params, X_samples[idx]))
+            if curr_point is not None:
+                same_model = True
+                for key in new_point.keys():
+                    if curr_point[key] != new_point[key] and key != 'nepochs':
+                        same_model = False
+
+                if same_model:
+                    best_idx = idx
+                    break
+
+            epoch = get_max_epoch(do, new_point)
+            if epoch > max_epoch:
+                best_idx = idx
+
+        if return_values:
+            return best_idx, ei
+        else:
+            return best_idx

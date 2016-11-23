@@ -20,10 +20,10 @@ class SimpleHybridFamily:
         return ["nfilters_embeded", "nlayers_embeded", "nfilters_cloud", "nlayers_cloud", "branchweight", "lr"]
 
     def generate_model(self, **kwargs):
-        nfilters_embeded = int(kwargs.get("nfilters_embeded",1))
-        nlayers_embeded = int(kwargs.get("nlayers_embeded",1))
-        nfilters_cloud = int(kwargs.get("nfilters_cloud",1))
-        nlayers_cloud = int(kwargs.get("nlayers_cloud",1))
+        nfilters_embeded = int(kwargs.get("nfilters_embeded", 1))
+        nlayers_embeded = int(kwargs.get("nlayers_embeded", 1))
+        nfilters_cloud = int(kwargs.get("nfilters_cloud", 1))
+        nlayers_cloud = int(kwargs.get("nlayers_cloud", 1))
 
         model = Sequential()
         model.add(BinaryConvPoolBNBST(self.input_dims, nfilters_embeded, 3, 1, 1, 3, 1, 1))

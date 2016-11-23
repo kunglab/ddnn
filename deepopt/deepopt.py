@@ -1,3 +1,4 @@
+import warnings
 from itertools import product
 from collections import Iterable
 from time import time
@@ -18,7 +19,7 @@ def cross(old_items,new_item):
     items.append(np.repeat([new_item], old_length, axis=1).ravel())
     return zip(*items)
 
-import errno    
+import errno
 import os
 
 def mkdir_p(path):
@@ -29,7 +30,7 @@ def mkdir_p(path):
             pass
         else:
             raise
-            
+
 class DeepOptEpoch(object):
     def __init__(self, nepochs=10, kernel=RBF(5, (1, 10)), n_restarts_optimizer=3, folder=None):
         self.params = []
@@ -46,8 +47,8 @@ class DeepOptEpoch(object):
         self.add_param('nepochs', range(1,self.nepochs+1))
         self.constraintfn = None
         self.chooser = EIChooser()
-        
-        
+
+
     def set_chooser(self, chooser=EIChooser()):
         self.chooser = chooser
 
@@ -132,13 +133,17 @@ class DeepOptEpoch(object):
     def fit(self):
         X = np.array(self.X)
         y = np.array(self.y)
-        self.gp.fit(X,y)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            self.gp.fit(X,y)
 
     def sample_point(self):
         chooser = self.chooser
 
         X_samples = np.array(self.X_samples)
-        y_pred, sigma = self.gp.predict(X_samples, return_std=True)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            y_pred, sigma = self.gp.predict(X_samples, return_std=True)
 
         if self.traces is not None:
             choosen_idx, chooser_values = chooser.choose(self, y_pred, sigma, return_values=True)
@@ -161,7 +166,7 @@ class DeepOptEpoch(object):
             self.traces.flush()
 
         return choosen_point
-    
+
     def get_traces(self):
         if self.folder:
             with open("{}/traces.txt".format(self.folder),'r') as f:
@@ -172,7 +177,7 @@ class DeepOptEpoch(object):
                         traces.append(json.loads(line.strip()))
                 return traces
         return ""
-        
+
     def point_to_kwargs(self, point):
         data = {}
         for k,v in enumerate(point):
@@ -198,7 +203,9 @@ class DeepOptEpoch(object):
         x = [d[1] for d in sorted(point)]
         idx = self.X_samples.index(tuple(x))
 
-        y_pred, sigma = self.gp.predict(self.X_samples[idx:idx+1], return_std=True)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            y_pred, sigma = self.gp.predict(self.X_samples[idx:idx+1], return_std=True)
         return y_pred
 
     def get_best_point(self):

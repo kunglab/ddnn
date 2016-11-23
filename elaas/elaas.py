@@ -1,28 +1,32 @@
+from pprint import pprint as pp
+
 from deepopt.deepopt import DeepOptEpoch
+from deepopt.chooser import get_max_epoch
 from .family.simple import SimpleHybridFamily
 
 class Collection(object):
-    def __init__(self, name, path="_models", nepochs=10):
+    def __init__(self, name, path="_models", nepochs=10, verbose=False):
         self.name = name
         self.path = path
         self.folder = '{}/{}'.format(self.path,name)
-        
+        self.verbose = verbose
+
         self.searchspace = None
         self.set_model_family(SimpleHybridFamily)
         self.set_nepochs(nepochs)
-            
+
     def set_nepochs(self, nepochs):
         self.nepochs = nepochs
         self.do = DeepOptEpoch(nepochs=nepochs, folder=self.folder)
         if self.searchspace is not None:
             self.set_searchspace(self.searchspace)
-        
+
     def add_trainset(self, trainset):
         self.trainset = trainset
 
     def add_testset(self, testset):
         self.testset = testset
-        
+
     def set_chooser(self, chooser):
         self.do.set_chooser(chooser)
 
@@ -37,23 +41,38 @@ class Collection(object):
     def set_constraints(self, constraintfn):
         self.do.set_constraints(constraintfn)
 
+    def print_status(self):
+        trace = self.do.get_traces()[-1]
+        sample = dict(zip(self.do.params, trace['x']))
+        print('Acc: {:2.3f}'.format(trace['y']))
+        pp(sample)
+        print('')
+
     def train(self, niters=10, bootstrap_nepochs=2):
         do = self.do
-        
+
         # Bootstrap epochs
         for point in do.get_bootstrap_points(bootstrap_nepochs):
+            if self.verbose:
+                print('Bootstrap: {}'.format(point))
+
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
-            do.add_points(range(1,int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), **point)
-            
+            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), **point)
+
         do.fit()
-        
+
         # Train
-        for i in range(niters):
+        i = 0
+        while i < niters:
             point = self.do.sample_point()
+            i += max(1, point['nepochs'] - get_max_epoch(do, point))
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
             do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), **point)
             do.fit()
-            
+
+            if self.verbose:
+                self.print_status()
+
         # Get the best model
         point = do.get_best_point()
         chain, model = self.family.load_chain_model(**point)
@@ -65,7 +84,7 @@ class Collection(object):
 
     def get_do_traces(self):
         return self.do.get_traces()
-            
+
     def generate_c(self, in_shape):
         return self.model.generate_c(in_shape)
 
