@@ -1,6 +1,4 @@
 import warnings
-from pprint import pprint as pp
-
 import numpy as np
 import scipy.stats as sps
 
@@ -108,11 +106,12 @@ class EpochChooser(EIChooser):
         self.k = k
 
     def choose(self, do, y_pred, sigma, return_values=False):
-        if len(do.traces) == 0:
+        traces = do.get_traces()
+        traces = [t for t in traces if t['action'] == 'add_point']
+        if len(traces) == 0:
             curr_point = None
         else:
-            curr_point = dict(zip(do.params,
-                                  do.X_samples[do.traces[-1]['max_idx']]))
+            curr_point = dict(zip(do.params, traces[-1]['x']))
 
         X_samples = np.array(do.X_samples)
         X = np.array(do.X)
@@ -125,13 +124,11 @@ class EpochChooser(EIChooser):
             new_point = dict(zip(do.params, X_samples[idx]))
             if curr_point is not None:
                 same_model = True
-                pp(curr_point, width=1)
                 for key in new_point.keys():
                     if curr_point[key] != new_point[key] and key != 'nepochs':
                         same_model = False
 
                 if same_model:
-                    print('same')
                     best_idx = idx
                     break
 
