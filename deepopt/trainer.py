@@ -6,10 +6,10 @@ import os
 import json
 
 class Trainer(object):
-    def __init__(self, folder, chain, train, test, batchsize=100, resume=True, gpu=0, nepoch=1):
+    def __init__(self, folder, chain, train, test, batchsize=1024, resume=True, gpu=0, nepoch=1):
         self.nepoch = nepoch
         self.folder = folder
-        
+
         if gpu >= 0:
             chainer.cuda.get_device(gpu).use()
             chain.to_gpu(gpu)
@@ -21,7 +21,7 @@ class Trainer(object):
 
         train_iter = chainer.iterators.SerialIterator(train, batchsize)
         test_iter = chainer.iterators.SerialIterator(test, batchsize,
-                                                        repeat=False, shuffle=False)
+                                                     repeat=False, shuffle=False)
 
         updater = training.StandardUpdater(train_iter, chain.optimizer, device=gpu)
         trainer = training.Trainer(updater, (nepoch, 'epoch'), out=folder)
@@ -57,15 +57,14 @@ class Trainer(object):
         acc = test_accuracy.tolist()
         loss = test_loss.tolist()
         return acc,loss
-    
+
     def get_result(self, key):
         ext = self.trainer.get_extension('validation')()
         return ext['{}'.format(key)].tolist()
-    
+
     def get_log_result(self, key):
         folder = self.folder
         nepoch = self.nepoch
         with open(os.path.join(folder,'log'),'r') as f:
             log = json.load(f)
         return [v[key] for v in log][:nepoch]
-        

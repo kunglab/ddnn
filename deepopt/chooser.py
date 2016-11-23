@@ -1,6 +1,16 @@
 import numpy as np
 import scipy.stats as sps
 
+def get_max_epoch(do, new_point):
+    X = np.array(do.X)
+    for i, param in enumerate(do.params):
+        if param == 'nepochs':
+            continue
+        X = X[X[:, i] == new_point[param]]
+
+    return np.max(X[:, do.params.index('nepochs')])
+
+
 class SimpleChooser(object):
     def __init__(self, beta=1):
         self.beta = beta
@@ -33,9 +43,30 @@ class EIChooser(object):
             return max_idx, ei
         else:
             return max_idx
-    
-# TODO: ADD OUR CHOOSER HERE. KEEP STATE INSIDE CHOOSER. PASSINGIN PARAMS FROM OUTSIDE AS LITTLE AS POSSIBLE 
 
-# TODO: ADD GRID SEARCH CHOOSER
+# TODO: ADD OUR CHOOSER HERE. KEEP STATE INSIDE CHOOSER. PASSINGIN PARAMS FROM OUTSIDE AS LITTLE AS POSSIBLE
+class GridChooser(object):
+    def __init__(self):
+        self.init = False
+
+    def choose_gen(self, do, y_pred, sigma, return_values=False):
+        X_samples = np.array(do.X_samples)
+        epoch_idx = do.params.index('nepochs')
+        max_epoch = np.max(X_samples[:, epoch_idx])
+        while True:
+            for idx, x in enumerate(do.X_samples):
+                if x[epoch_idx] == max_epoch:
+                    if return_values:
+                        yield idx, np.zeros(len(y_pred))
+                    else:
+                        yield idx
+
+    def choose(self, do, y_pred, sigma, return_values=False):
+        if not self.init:
+            self.gen = self.choose_gen(do, y_pred, sigma, return_values=return_values)
+            self.init = True
+
+        return self.gen.next()
+
 
 # TODO: ADD NP EPOCH GP CHOOSER etc...
