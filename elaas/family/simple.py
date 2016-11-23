@@ -34,9 +34,15 @@ class SimpleHybridFamily:
         branch.add(BinaryLinearBNBST(None, self.output_dims))
         model.add(branch)
 
-        model.add(BinaryConvPoolBNBST(nfilters_embeded, nfilters_cloud, 3, 1, 1, 3, 1, 1))
+        model.add(Convolution2D(nfilters_embeded, nfilters_cloud, 3, 1, 1))
+        model.add(BatchNormalization(nfilters_cloud))
+        model.add(Activation('relu'))
+        model.add(max_pooling_2d(3,1,1))
         for i in range(nlayers_cloud):
-            model.add(BinaryConvPoolBNBST(nfilters_cloud, nfilters_cloud, 3, 1, 1, 3, 1, 1))
+            model.add(Convolution2D(nfilters_cloud, nfilters_cloud, 3, 1, 1))
+            model.add(BatchNormalization(nfilters_cloud))
+            model.add(Activation('relu'))
+            model.add(max_pooling_2d(3,1,1))
         model.add(Linear(None, self.output_dims))
         model.build()
         return model
