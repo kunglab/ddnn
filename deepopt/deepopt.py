@@ -6,6 +6,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 import numpy as np
 from .chooser import EIChooser
+import json
 
 def cross(old_items,new_item):
     old_items = np.array(old_items)
@@ -17,19 +18,36 @@ def cross(old_items,new_item):
     items.append(np.repeat([new_item], old_length, axis=1).ravel())
     return zip(*items)
 
+import errno    
+import os
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+            
 class DeepOptEpoch(object):
-    def __init__(self, nepochs=10, kernel=RBF(5, (1, 10)), n_restarts_optimizer=3):
+    def __init__(self, nepochs=10, kernel=RBF(5, (1, 10)), n_restarts_optimizer=3, folder=None):
         self.params = []
         self.X_samples = [[]]
         self.X = []
         self.y = []
+        self.traces = None
+        self.folder = folder
+        if self.folder:
+            mkdir_p(self.folder)
+            self.traces = open("{}/traces.txt".format(self.folder),'w')
         self.gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=n_restarts_optimizer)
         self.nepochs = nepochs
         self.add_param('nepochs', range(1,self.nepochs+1))
-        self.traces = None
         self.constraintfn = None
         self.chooser = EIChooser()
-
+        
+        
     def set_chooser(self, chooser=EIChooser()):
         self.chooser = chooser
 
@@ -40,10 +58,20 @@ class DeepOptEpoch(object):
             if constraintfn(**self.point_to_kwargs(x)):
                 X_samples.append(x)
         self.X_samples = X_samples
+        if self.traces is not None:
+            self.traces.write(json.dumps(dict(action="set_constraints",
+                                    X_samples = self.X_samples,
+                                    params = self.params))+"\n")
+            self.traces.flush()
 
     def add_param(self, name, values):
         self.params.append(name)
         self.X_samples = cross(self.X_samples, values)
+        if self.traces is not None:
+            self.traces.write(json.dumps(dict(action="add_param",
+                                    X_samples = self.X_samples,
+                                    params = self.params))+"\n")
+            self.traces.flush()
 
     def add_points(self, epochs, ys, **kwargs):
         for j in range(len(epochs)):
@@ -58,6 +86,11 @@ class DeepOptEpoch(object):
         x = [d[1] for d in sorted(point)]
         self.X.append(x)
         self.y.append(y)
+        if self.traces is not None:
+            self.traces.write(json.dumps(dict(action="add_point",
+                                        x = x,
+                                        y = y))+"\n")
+            self.traces.flush()
 
     def save(self, fn):
         np.savez(fn, params=self.params,X_samples=self.X_samples,
@@ -101,9 +134,6 @@ class DeepOptEpoch(object):
         y = np.array(self.y)
         self.gp.fit(X,y)
 
-    def start_traces(self):
-        self.traces = []
-
     def sample_point(self):
         chooser = self.chooser
 
@@ -111,29 +141,38 @@ class DeepOptEpoch(object):
         y_pred, sigma = self.gp.predict(X_samples, return_std=True)
 
         if self.traces is not None:
-            max_idx, chooser_values = chooser.choose(self, y_pred, sigma, return_values=True)
+            choosen_idx, chooser_values = chooser.choose(self, y_pred, sigma, return_values=True)
         else:
-            max_idx = chooser.choose(self, y_pred, sigma)
-        point = X_samples[max_idx]
-        max_point = {}
+            choosen_idx = chooser.choose(self, y_pred, sigma)
+        point = X_samples[choosen_idx]
+        choosen_point = {}
         for k,v in enumerate(point):
-            max_point[self.params[k]] = v
+            choosen_point[self.params[k]] = v
 
         if self.traces is not None:
-            self.traces.append(dict(X_samples=X_samples,
-                                    y_pred=y_pred,
-                                    sigma=sigma,
-                                    max_idx=max_idx,
-                                    max_point=max_point,
-                                    chooser_values=chooser_values))
+            self.traces.write(json.dumps(dict(action="sample_point",
+                                    params=self.params,
+                                    X_samples=self.X_samples,
+                                    y_pred=y_pred.tolist(),
+                                    sigma=sigma.tolist(),
+                                    choosen_idx=choosen_idx,
+                                    choosen_point=choosen_point,
+                                    chooser_values=chooser_values.tolist()))+"\n")
+            self.traces.flush()
 
-        return max_point
-
-    def stop_traces(self):
-        traces = self.traces
-        self.traces = None
-        return traces
-
+        return choosen_point
+    
+    def get_traces(self):
+        if self.folder:
+            with open("{}/traces.txt".format(self.folder),'r') as f:
+                lines = f.read().split("\n")
+                traces = []
+                for line in lines:
+                    if line:
+                        traces.append(json.loads(line.strip()))
+                return traces
+        return ""
+        
     def point_to_kwargs(self, point):
         data = {}
         for k,v in enumerate(point):
