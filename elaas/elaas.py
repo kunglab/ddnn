@@ -53,6 +53,9 @@ class Collection(object):
 
         # Bootstrap epochs
         for point in do.get_bootstrap_points(bootstrap_nepochs):
+            if self.verbose:
+                print('Bootstrap: {}'.format(point))
+
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
             do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), **point)
 
@@ -62,8 +65,7 @@ class Collection(object):
         i = 0
         while i < niters:
             point = self.do.sample_point()
-            i += point['nepochs'] - get_max_epoch(do, point)
-
+            i += max(1, point['nepochs'] - get_max_epoch(do, point))
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
             do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), **point)
             do.fit()
