@@ -33,7 +33,7 @@ def embed_transmit_err(do, traces, save_dir):
         h = hash(frozenset(point.items()))
         if h not in model_hashes:
             model_hashes.append(h)
-            xs.append(point['nfilters_embeded']*(9/8))
+            xs.append((point['nfilters_embeded']**2)*(9/8))
             ys.append(t['y'])
 
 
@@ -44,7 +44,7 @@ def embed_transmit_err(do, traces, save_dir):
     plt.xlim((np.min(xs)-x_rng, np.max(xs)+x_rng))
     plt.ylim((np.min(ys)-y_rng, np.max(ys)+y_rng))
     plt.xlabel('transmission size (bytes)')
-    plt.ylabel('accuracy rate')
+    plt.ylabel('accuracy')
     plt.tight_layout()
     plt.savefig(save_dir + 'transmit_error.png')
     plt.clf()
@@ -68,7 +68,7 @@ def embed_memory_err(do, traces, save_dir):
         h = hash(frozenset(point.items()))
         if h not in model_hashes:
             model_hashes.append(h)
-            xs.append(point['nfilters_embeded']*point['nlayers_embeded']*(9/8))
+            xs.append((point['nfilters_embeded']**2)*point['nlayers_embeded']*(9/8))
             ys.append(t['y'])
 
     plt.figure(figsize=(8, 6.5))
