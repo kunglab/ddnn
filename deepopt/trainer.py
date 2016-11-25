@@ -9,8 +9,10 @@ class Trainer(object):
     def __init__(self, folder, chain, train, test, batchsize=1024, resume=True, gpu=0, nepoch=1):
         self.nepoch = nepoch
         self.folder = folder
+        self.chain = chain
+        self.gpu = gpu
 
-        if gpu >= 0:
+        if self.gpu >= 0:
             chainer.cuda.get_device(gpu).use()
             chain.to_gpu(gpu)
         eval_chain = chain.copy()
@@ -56,6 +58,8 @@ class Trainer(object):
         test_loss = ext['validation/main/loss']
         acc = test_accuracy.tolist()
         loss = test_loss.tolist()
+        if self.gpu >= 0:
+            self.chain.to_cpu()        
         return acc,loss
 
     def get_result(self, key):
