@@ -26,19 +26,17 @@ mnist.add_trainset(train)
 mnist.add_testset(test)
 
 mnist.set_searchspace(
-    nfilters_embeded=[1],
-    nlayers_embeded=[1, 2],
-    nfilters_cloud=[1],
-    nlayers_cloud=[1, 2],
+    nfilters_embeded=[20],
+    nlayers_embeded=[2],
+    nfilters_cloud=[20],
+    nlayers_cloud=[2],
     lr=[1e-3],
-    branchweight=[.1]
+    branchweight=[.5],
+    ent_T=[0.4]
 )
 
 def constraintfn(**kwargs):
     #TODO: change to memory cost
-    if kwargs['nfilters_embeded'] > 2:
-        return False
-
     return True
 
 mnist.set_constraints(constraintfn)

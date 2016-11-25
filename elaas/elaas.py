@@ -53,6 +53,7 @@ class Collection(object):
 
         # Bootstrap epochs
         for point in do.get_bootstrap_points(bootstrap_nepochs):
+            print(point)
             if self.verbose:
                 print('Bootstrap: {}'.format(point))
 

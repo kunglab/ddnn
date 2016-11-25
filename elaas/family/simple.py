@@ -31,7 +31,7 @@ class SimpleHybridFamily:
             model.add(BinaryConvPoolBNBST(nfilters_embeded, nfilters_embeded, 3, 1, 1, 3, 1, 1))
 
         branch = Sequential()
-        branch.add(BinaryLinearBNBST(None, self.output_dims))
+        branch.add(BinaryLinearBNSoftmax(None, self.output_dims))
         model.add(branch)
 
         model.add(Convolution2D(nfilters_embeded, nfilters_cloud, 3, 1, 1))
@@ -61,9 +61,10 @@ class SimpleHybridFamily:
         model = self.generate_model(**kwargs)
 
         branchweight = kwargs.get("branchweight", 3)
+        ent_T = kwargs.get("ent_T", None)
         lr = kwargs.get("lr", 0.001)
 
-        chain = Chain(branchweight=branchweight)
+        chain = Chain(branchweight=branchweight, ent_T=ent_T)
         chain.add_sequence(model)
         chain.setup_optimizers('adam', lr)
         return chain, model
@@ -85,6 +86,7 @@ class SimpleHybridFamily:
         nepochs = int(kwargs.get("nepochs", 2))
         name = self.get_name(**kwargs)
 
-        trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset, testset, nepoch=nepochs, resume=True)
+        trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
+                          testset, nepoch=nepochs, resume=True)
         acc, loss = trainer.run()
         return trainer, model

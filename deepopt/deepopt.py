@@ -185,7 +185,9 @@ class DeepOptEpoch(object):
         return data
 
     def get_bootstrap_points(self, bootstrap_nepochs=2):
-        points = [self.point_to_kwargs(point) for point in self.X_samples if point[0] == bootstrap_nepochs]
+        epoch_idx = self.params.index('nepochs')
+        points = [self.point_to_kwargs(point)
+                  for point in self.X_samples if point[epoch_idx] == bootstrap_nepochs]
         return points
 
     def get_ys(self, **kwargs):

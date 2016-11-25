@@ -2,10 +2,9 @@ import numpy
 import chainer
 import weightnorm
 import util
-from .binary import links 
+from .binary import links
 
 class BinaryLink(object):
-    
     def __call__(self, x):
         raise NotImplementedError()
 
@@ -35,9 +34,9 @@ class BinaryLink(object):
         raise NotImplementedError()
 
     def dump(self):
-        print "Link: {}".format(self._link)
+        print("Link: {}".format(self._link))
         for attr, value in self.__dict__.iteritems():
-            print "    {}: {}".format(attr, value)
+            print("    {}: {}".format(attr, value))
 
 class BinaryConvBNBST(BinaryLink):
     def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0):
@@ -65,7 +64,7 @@ class ConvBNBST(BinaryLink):
     def to_link(self):
         args = self.to_chainer_args()
         return links.ConvBNBST(**args)
-    
+
 class BinaryConvPoolBNBST(BinaryLink):
     def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0, pksize=3, pstride=2, ppad=0):
         self._link = "BinaryConvPoolBNBST"
@@ -82,7 +81,7 @@ class BinaryConvPoolBNBST(BinaryLink):
         # TODO Support Weight Initializer
         args = self.to_chainer_args()
         return links.BinaryConvPoolBNBST(**args)
-    
+
 class ConvPoolBNBST(BinaryLink):
     def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0, pksize=3, pstride=2, ppad=0):
         self._link = "ConvPoolBNBST"
@@ -110,7 +109,7 @@ class BinaryLinearBNBST(BinaryLink):
         # TODO Support Weight Initializer
         args = self.to_chainer_args()
         return links.BinaryLinearBNBST(**args)
-    
+
 class BinaryLinearBNSoftmax(BinaryLink):
     def __init__(self, in_channels, out_channels):
         self._link = "BinaryLinearBNSoftmax"
@@ -121,7 +120,7 @@ class BinaryLinearBNSoftmax(BinaryLink):
         # TODO Support Weight Initializer
         args = self.to_chainer_args()
         return links.BinaryLinearBNSoftmax(**args)
-    
+
 class BinaryLinearBNSoftmax(BinaryLink):
     def __init__(self, in_channels, out_channels):
         self._link = "BinaryLinearBNSoftmax"
@@ -132,7 +131,7 @@ class BinaryLinearBNSoftmax(BinaryLink):
         # TODO Support Weight Initializer
         args = self.to_chainer_args()
         return links.BinaryLinearBNSoftmax(**args)
-    
+
 class BinaryLinearSoftmax(BinaryLink):
     def __init__(self, in_channels, out_channels):
         self._link = "BinaryLinearSoftmax"
@@ -143,7 +142,7 @@ class BinaryLinearSoftmax(BinaryLink):
         # TODO Support Weight Initializer
         args = self.to_chainer_args()
         return links.BinaryLinearSoftmax(**args)
-    
+
 class LinearBNBST(BinaryLink):
     def __init__(self, in_channels, out_channels):
         self._link = "LinearBNBST"
@@ -154,4 +153,3 @@ class LinearBNBST(BinaryLink):
         # TODO Support Weight Initializer
         args = self.to_chainer_args()
         return links.LinearBNBST(**args)
-    
