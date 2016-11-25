@@ -71,6 +71,7 @@ class Collection(object):
             do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), **point)
             do.fit()
 
+
             if self.verbose:
                 self.print_status()
 

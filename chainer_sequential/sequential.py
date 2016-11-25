@@ -7,7 +7,7 @@ import binary_function
 import numpy as np
 from chainer import cuda
 import inspect
-        
+
 class Sequential(object):
     def __init__(self, weight_initializer="Normal", weight_init_std=1):
         self._layers = []
@@ -15,7 +15,7 @@ class Sequential(object):
 
         self.weight_initializer = weight_initializer    # Normal / GlorotNormal / HeNormal
         self.weight_init_std = weight_init_std
-        
+
     def add(self, layer):
         if isinstance(layer, Sequential):
             self._layers.append(layer)
@@ -157,7 +157,7 @@ class Sequential(object):
         if b is not None:
             return (x,b)
         return (x)
-    
+
     def generate_call(self):
         link_idx = 0
         text = ""
@@ -168,9 +168,9 @@ class Sequential(object):
         text += "  {name}(input, temp1);\n".format(name=l.cname + str(link_idx))
 
         link_idx += 1
-        
+
         lastlink = self.links[-1]
-        
+
         for l in self.links[1:-1]:
             if isinstance(l, Sequential): # branch off to the first branch
                 lastlink = l.links[-1]
@@ -179,7 +179,7 @@ class Sequential(object):
                         text += "  {name}(temp1, temp2);\n".format(name=l.cname + str(link_idx))
                     else:
                         text += "  {name}(temp2, temp1);\n".format(name=l.cname + str(link_idx))
-                    link_idx = link_idx + 1                    
+                    link_idx = link_idx + 1
                 break
             if link_idx % 2 == 1:
                 text += "  {name}(temp1, temp2);\n".format(name=l.cname + str(link_idx))
@@ -196,14 +196,14 @@ class Sequential(object):
         text += "}"
 
         return text
-    
+
     def generate_c(self, shape, name="main"):
         text = """
-#include "util.h"        
+#include "util.h"
 """
         h = np.random.random([1]+list(shape)).astype(np.float32)
         #inp = ",".join([str(item) for item in h.flatten().tolist()])
-        
+
         input_size = h.size
         inter_sizes = []
         for i, link in enumerate(self.links):
@@ -219,7 +219,7 @@ class Sequential(object):
                 text += link.generate_c(i, h.shape)
             h = link(h)
         inter_size = int(np.max(inter_sizes))
-            
+
         text += """
 char name[] = "{name}";
 float input[{input_size}] = {{{inp}}};
@@ -227,6 +227,6 @@ uint8_t output[1] = {{0}};
 uint8_t temp1[{inter_size}] = {{0}}; // Allocate large enough
 uint8_t temp2[{inter_size}] = {{0}}; // Allocate large enough
 """.format(name=name,input_size=input_size,inter_size=inter_size,inp="0")
-        
+
         text += self.generate_call()
         return text
