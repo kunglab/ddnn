@@ -33,6 +33,7 @@ class BinaryFamily:
             model.add(BinaryConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
             
         model.add(BinaryLinearBNSoftmax(None, self.output_dims))
+        model.build()
         return model
 
     def load_chain_model(self, **kwargs):
