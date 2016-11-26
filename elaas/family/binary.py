@@ -31,7 +31,7 @@ class BinaryFamily:
             else:
                 nfilters = nfilters_embeded
             model.add(BinaryConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
-            
+
         model.add(BinaryLinearBNSoftmax(None, self.output_dims))
         model.build()
         return model
@@ -77,5 +77,5 @@ class BinaryFamily:
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, nepoch=nepochs, resume=True)
         acc, loss = trainer.run()
-        
+
         return trainer, model
