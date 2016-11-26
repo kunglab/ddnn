@@ -43,7 +43,7 @@ class BinaryCloudFamily:
             else:
                 nfilters = nfilters_cloud
             model.add(BinaryConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
-        model.add(Linear(None, self.output_dims))
+        model.add(BinaryLinearBNSoftmax(None, self.output_dims))
         model.build()
         return model
 
