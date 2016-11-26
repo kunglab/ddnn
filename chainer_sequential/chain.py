@@ -90,6 +90,7 @@ class Chain(chainer.Chain):
 
         self.y = self.sequence(*x, test=self.test)
 
+        reporter.report({'numsamples': float(x[0].shape[0])}, self)
         if isinstance(self.y, tuple):
             self.loss = 0
             for i, y in enumerate(self.y):
@@ -103,8 +104,8 @@ class Chain(chainer.Chain):
             reporter.report({'loss': self.loss}, self)
             if self.compute_accuracy:
                 y, exited = self.sequence.predict(*x, ent_T=self.ent_T, test=self.test)
-                numexited = np.sum(exited).tolist()
-                numtotal = len(exited)
+                numexited = float(np.sum(exited).tolist())
+                numtotal = float(len(exited))
                 #print("numexited",numexited)
                 self.accuracy = self.accfun(y, t)
                 reporter.report({'accuracy': self.accuracy}, self)

@@ -37,7 +37,7 @@ class DeepOptEpoch(object):
         self.X_samples = [[]]
         self.X = []
         self.y = []
-        self.meta = []
+        self.metas = []
         self.traces = None
         self.folder = folder
         if self.folder:
@@ -76,9 +76,13 @@ class DeepOptEpoch(object):
             self.traces.flush()
 
     def add_points(self, epochs, ys, metas=None, **kwargs):
+        maps = [{} for y in ys]
+        for k,meta in metas.iteritems():
+            for i,v in enumerate(meta):
+                maps[i][k] = v
         for j in range(len(epochs)):
             if metas is not None:
-                self.add_point(epochs[j], ys[j], metas[j], **kwargs)
+                self.add_point(epochs[j], ys[j], meta=maps[j], **kwargs)
             else:
                 self.add_point(epochs[j], ys[j], **kwargs)
             
@@ -91,7 +95,7 @@ class DeepOptEpoch(object):
         x = [d[1] for d in sorted(point)]
         self.X.append(x)
         self.y.append(y)
-        self.meta.append(meta)
+        self.metas.append(meta)
         if self.traces is not None:
             self.traces.write(json.dumps(dict(action="add_point",
                                         x = x,
@@ -109,7 +113,7 @@ class DeepOptEpoch(object):
         self.X_samples = data['X_samples'].tolist()
         self.X = data['X'].tolist()
         self.y = data['y'].tolist()
-        self.meta = data['meta'].tolist()
+        self.metas = data['meta'].tolist()
         self.nepochs = int(data['nepochs'].tolist())
 
     # deprecated

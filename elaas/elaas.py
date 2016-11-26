@@ -58,8 +58,11 @@ class Collection(object):
                 print('Bootstrap: {}'.format(point))
 
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
-            meta = dict(branch0exit=trainer.get_log_result("validation/main/branch0exit"))
-            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), meta=meta, **point)
+            metas = dict(branch0accuracy=trainer.get_log_result("validation/main/branch0accuracy"),
+branch1accuracy=trainer.get_log_result("validation/main/branch1accuracy"),
+branch0exit=trainer.get_log_result("validation/main/branch0exit"),
+branch1exit=trainer.get_log_result("validation/main/branch1exit"), numsamples=trainer.get_log_result("validation/main/numsamples"))
+            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), metas=metas, **point)
 
         do.fit()
 
@@ -69,10 +72,12 @@ class Collection(object):
             point = self.do.sample_point()
             i += max(1, point['nepochs'] - get_max_epoch(do, point))
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
-            meta = dict(branch0exit=trainer.get_log_result("validation/main/branch0exit"))
-            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), meta=meta, **point)
+            metas = dict(branch0accuracy=trainer.get_log_result("validation/main/branch0accuracy"),
+branch1accuracy=trainer.get_log_result("validation/main/branch1accuracy"),
+branch0exit=trainer.get_log_result("validation/main/branch0exit"),
+branch1exit=trainer.get_log_result("validation/main/branch1exit"), numsamples=trainer.get_log_result("validation/main/numsamples"))
+            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), metas=metas, **point)
             do.fit()
-
 
             if self.verbose:
                 self.print_status()

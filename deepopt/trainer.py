@@ -4,6 +4,9 @@ import chainer.serializers as S
 import chainer
 import os
 import json
+from chainer.training.triggers import IntervalTrigger
+from collections import defaultdict
+import numpy as np
 
 class Trainer(object):
     def __init__(self, folder, chain, train, test, batchsize=1024, resume=True, gpu=0, nepoch=1):
@@ -34,9 +37,8 @@ class Trainer(object):
         trainer.extend(extensions.snapshot(
             filename='snapshot_epoch_{.updater.epoch:06}'), trigger=(1,'epoch'))
         trainer.extend(extensions.LogReport(trigger=(1,'epoch')), trigger=(1,'iteration'))
-        # trainer.extend(extensions.PrintReport(
-        #     ['epoch', 'main/loss', 'validation/main/loss',
-        #      'main/accuracy', 'validation/main/accuracy']))
+        #trainer.extend(extensions.PrintReport(
+        #    ['iteration','main/branch0exit','main/branch1exit']), trigger=IntervalTrigger(1,'iteration'))
 
         if resume:
             i = 1
@@ -62,13 +64,26 @@ class Trainer(object):
             self.chain.to_cpu()        
         return acc,loss
 
+    # Deprecated
     def get_result(self, key):
+        # this only returns the lastest log
         ext = self.trainer.get_extension('validation')()
         return ext.get('{}'.format(key),np.array(None)).tolist()
 
-    def get_log_result(self, key):
+    def get_log_result(self, key, reduce_fn=np.mean):
         folder = self.folder
         nepoch = self.nepoch
         with open(os.path.join(folder,'log'),'r') as f:
             log = json.load(f)
-        return [v[key] for v in log][:nepoch]
+            
+        epochMap = defaultdict(list)
+        for v in log:
+            if v.get(key,None) is not None:
+                epochMap[int(v["epoch"])].append(v[key])
+        
+        epochs = sorted(epochMap.keys())
+        values = []
+        for epoch in epochs:
+            values.append(reduce_fn(epochMap[epoch]))
+        
+        return values[:nepoch]
