@@ -8,7 +8,7 @@ from chainer_sequential.link import *
 from chainer_sequential.binary_link import *
 from chainer import functions as F
 
-class SimpleHybridFamily:
+class BinaryCloudFamily:
     def __init__(self, folder="_models/simple_hybrid", prefix=None, input_dims=1, output_dims=10):
         self.folder = folder
         self.prefix = prefix
@@ -42,10 +42,7 @@ class SimpleHybridFamily:
                 nfilters = nfilters_embeded
             else:
                 nfilters = nfilters_cloud
-            model.add(Convolution2D(nfilters, nfilters_cloud, 3, 1, 1))
-            model.add(BatchNormalization(nfilters_cloud))
-            model.add(Activation('relu'))
-            model.add(max_pooling_2d(3,1,1))
+            model.add(BinaryConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
         model.add(Linear(None, self.output_dims))
         model.build()
         return model
@@ -92,5 +89,5 @@ class SimpleHybridFamily:
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, nepoch=nepochs, resume=True)
         acc, loss = trainer.run()
-
+        
         return trainer, model
