@@ -28,9 +28,10 @@ class BinaryFamily:
         for i in range(nlayers_embeded):
             if i == 0:
                 nfilters = self.input_dims
+                model.add(ConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
             else:
                 nfilters = nfilters_embeded
-            model.add(BinaryConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
+                model.add(BinaryConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
             
         model.add(BinaryLinearBNSoftmax(None, self.output_dims))
         model.build()
