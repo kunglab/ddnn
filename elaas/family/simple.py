@@ -92,5 +92,5 @@ class SimpleHybridFamily:
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, nepoch=nepochs, resume=True)
         acc, loss = trainer.run()
-        
+
         return trainer, model

@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 
 class Trainer(object):
-    def __init__(self, folder, chain, train, test, batchsize=1024, resume=True, gpu=0, nepoch=1):
+    def __init__(self, folder, chain, train, test, batchsize=512, resume=True, gpu=0, nepoch=1):
         self.nepoch = nepoch
         self.folder = folder
         self.chain = chain
@@ -61,7 +61,7 @@ class Trainer(object):
         acc = test_accuracy.tolist()
         loss = test_loss.tolist()
         if self.gpu >= 0:
-            self.chain.to_cpu()        
+            self.chain.to_cpu()
         return acc,loss
 
     # Deprecated
@@ -75,15 +75,15 @@ class Trainer(object):
         nepoch = self.nepoch
         with open(os.path.join(folder,'log'),'r') as f:
             log = json.load(f)
-            
+
         epochMap = defaultdict(list)
         for v in log:
             if v.get(key,None) is not None:
                 epochMap[int(v["epoch"])].append(v[key])
-        
+
         epochs = sorted(epochMap.keys())
         values = []
         for epoch in epochs:
             values.append(reduce_fn(epochMap[epoch]))
-        
+
         return values[:nepoch]
