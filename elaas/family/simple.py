@@ -6,7 +6,6 @@ from chainer_sequential.sequential import Sequential
 from chainer_sequential.function import *
 from chainer_sequential.link import *
 from chainer_sequential.binary_link import *
-from chainer_sequential.function import softmax_cross_entropy
 from chainer import functions as F
 
 class SimpleHybridFamily:
@@ -89,4 +88,5 @@ class SimpleHybridFamily:
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, nepoch=nepochs, resume=True)
         acc, loss = trainer.run()
+        
         return trainer, model

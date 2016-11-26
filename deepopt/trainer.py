@@ -33,7 +33,7 @@ class Trainer(object):
             chain, 'chain_snapshot_epoch_{.updater.epoch:06}'), trigger=(1,'epoch'))
         trainer.extend(extensions.snapshot(
             filename='snapshot_epoch_{.updater.epoch:06}'), trigger=(1,'epoch'))
-        trainer.extend(extensions.LogReport(trigger=(1,'epoch')))
+        trainer.extend(extensions.LogReport(trigger=(1,'epoch')), trigger=(1,'iteration'))
         # trainer.extend(extensions.PrintReport(
         #     ['epoch', 'main/loss', 'validation/main/loss',
         #      'main/accuracy', 'validation/main/accuracy']))
@@ -64,7 +64,7 @@ class Trainer(object):
 
     def get_result(self, key):
         ext = self.trainer.get_extension('validation')()
-        return ext['{}'.format(key)].tolist()
+        return ext.get('{}'.format(key),np.array(None)).tolist()
 
     def get_log_result(self, key):
         folder = self.folder

@@ -37,6 +37,7 @@ class DeepOptEpoch(object):
         self.X_samples = [[]]
         self.X = []
         self.y = []
+        self.meta = []
         self.traces = None
         self.folder = folder
         if self.folder:
@@ -74,11 +75,14 @@ class DeepOptEpoch(object):
                                     params = self.params))+"\n")
             self.traces.flush()
 
-    def add_points(self, epochs, ys, **kwargs):
+    def add_points(self, epochs, ys, metas=None, **kwargs):
         for j in range(len(epochs)):
-            self.add_point(epochs[j], ys[j], **kwargs)
-
-    def add_point(self, epoch, y, **kwargs):
+            if metas is not None:
+                self.add_point(epochs[j], ys[j], metas[j], **kwargs)
+            else:
+                self.add_point(epochs[j], ys[j], **kwargs)
+            
+    def add_point(self, epoch, y, meta=None, **kwargs):
         kwargs['nepochs'] = epoch
         point = []
         for k,v in kwargs.iteritems():
@@ -87,15 +91,17 @@ class DeepOptEpoch(object):
         x = [d[1] for d in sorted(point)]
         self.X.append(x)
         self.y.append(y)
+        self.meta.append(meta)
         if self.traces is not None:
             self.traces.write(json.dumps(dict(action="add_point",
                                         x = x,
-                                        y = y))+"\n")
+                                        y = y,
+                                        meta = meta))+"\n")
             self.traces.flush()
 
     def save(self, fn):
         np.savez(fn, params=self.params,X_samples=self.X_samples,
-                 X=self.X,y=self.y,nepochs=self.nepochs)
+                 X=self.X,y=self.y,meta=self.meta,nepochs=self.nepochs)
 
     def load(self, fn):
         data = np.load(fn)
@@ -103,6 +109,7 @@ class DeepOptEpoch(object):
         self.X_samples = data['X_samples'].tolist()
         self.X = data['X'].tolist()
         self.y = data['y'].tolist()
+        self.meta = data['meta'].tolist()
         self.nepochs = int(data['nepochs'].tolist())
 
     # deprecated

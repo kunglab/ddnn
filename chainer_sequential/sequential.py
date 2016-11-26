@@ -7,6 +7,8 @@ import binary_function
 import numpy as np
 from chainer import cuda
 import inspect
+from chainer_ext.functions import entropy
+import chainer.functions as F
 
 class Sequential(object):
     def __init__(self, weight_initializer="Normal", weight_init_std=1):
@@ -138,7 +140,69 @@ class Sequential(object):
 
     #def __call__(self, x, test=False):
     #    return self.links(x, test)
-
+    
+    def entropy_filter(self, x, b, ent_T):
+        xp = cuda.get_array_module(b)
+        eb = entropy(F.softmax(b))
+        
+        if xp != np:
+            with cuda.get_device(eb.data):
+                exited = eb.data < ent_T
+            exited = exited.get()
+        else:
+            exited = eb.data < ent_T
+            
+        y_exit = []
+        y_cont = []
+        for i,idx in enumerate(exited):
+            if idx:
+                y_exit.append(b[i:i+1])
+            else:
+                y_cont.append(x[i:i+1])
+        
+        if len(y_exit) > 0:
+            y_exit = F.vstack(y_exit)
+        if len(y_cont) > 0:
+            y_cont = F.vstack(y_cont)
+        return y_exit,y_cont,exited
+    
+    def predict(self, x, ent_T=None, test=True):
+        # Return last layer result
+        if ent_T is None:
+            return self(x, test)
+        
+        b = None
+        for i, link in enumerate(self.links):
+            if isinstance(link, Sequential):
+                b = link(x, test=test)
+                y_exit,y_cont,exited = self.entropy_filter(x, b, ent_T)
+                b = y_exit
+                x = y_cont
+                if len(x) == 0:
+                    break
+            elif isinstance(link, function.dropout):
+                x = link(x, train=not test)
+            elif isinstance(link, chainer.links.BatchNormalization):
+                x = link(x, test=test)
+            elif hasattr(link,'__call__') and 'train' in inspect.getargspec(link.__call__)[0]:
+                x = link(x, train=not test)
+            elif hasattr(link,'__call__') and 'test' in inspect.getargspec(link.__call__)[0]:
+                x = link(x, test=test)
+            else:
+                x = link(x)
+        
+        ys = []
+        j = 0
+        k = 0
+        for exit in exited:
+            if exit:
+                ys.append(b[j])
+                j = j + 1
+            else:
+                ys.append(x[k])
+                k = k + 1
+        return F.vstack(ys), exited        
+                    
     def __call__(self, x, test=False):
         b = None
         for i, link in enumerate(self.links):
@@ -155,7 +219,7 @@ class Sequential(object):
             else:
                 x = link(x)
         if b is not None:
-            return (x,b)
+            return (b,x)
         return (x)
 
     def generate_call(self):

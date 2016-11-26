@@ -58,7 +58,8 @@ class Collection(object):
                 print('Bootstrap: {}'.format(point))
 
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
-            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), **point)
+            meta = dict(branch0exit=trainer.get_log_result("validation/main/branch0exit"))
+            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), meta=meta, **point)
 
         do.fit()
 
@@ -68,7 +69,8 @@ class Collection(object):
             point = self.do.sample_point()
             i += max(1, point['nepochs'] - get_max_epoch(do, point))
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
-            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), **point)
+            meta = dict(branch0exit=trainer.get_log_result("validation/main/branch0exit"))
+            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), meta=meta, **point)
             do.fit()
 
 

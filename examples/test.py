@@ -42,7 +42,7 @@ mnist.set_searchspace(
     nlayers_cloud=[3],
     lr=[1e-3, 1e-4],
     branchweight=[.1],
-    ent_T=[0.0, 0.1, 0.5]
+    ent_T=[0.5, 0.6]
 )
 
 def constraintfn(**kwargs):

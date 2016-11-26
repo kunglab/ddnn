@@ -80,48 +80,6 @@ class Chain(chainer.Chain):
         self.optimizer = opt
         return self.optimizer
 
-    def ent_acc(self, t):
-        '''
-        Entropy based accuracy for single branch case
-        '''
-        #exit all at last branch if not set
-        if self.ent_T is None:
-            return self.accfun(self.y[0], t)
-
-        y_last, y_br = self.y
-        y_last.to_cpu()
-        y_br.to_cpu()
-        t.to_cpu()
-
-        y_br_sm = softmax(y_br)
-        y_br_ent = entropy(y_br_sm.data.T)
-        idxs = y_br_ent < self.ent_T
-        num_early = np.sum(idxs)
-        num_last = np.sum(~idxs)
-
-        y_early_exit = Variable(y_br.data[idxs==True])
-        t_early = Variable(t.data[idxs==True])
-        y_last_exit = Variable(y_last.data[idxs==False])
-        t_last = Variable(t.data[idxs==False])
-        y_early_exit.to_gpu()
-        y_last_exit.to_gpu()
-        t_early.to_gpu()
-        t_last.to_gpu()
-
-        #if no samples exit early, set acc to 1.
-        if num_early == 0:
-            early_acc = 1
-        else:
-            early_acc = self.accfun(y_early_exit, t_early).data
-        last_acc = self.accfun(y_last_exit, t_last).data
-        acc = (early_acc*num_early + last_acc*num_last) / (num_early + num_last)
-
-        y_last.to_gpu()
-        y_br.to_gpu()
-        t.to_gpu()
-
-        return acc
-
     def __call__(self, *args):
         x = args[:-1]
         t = args[-1]
@@ -133,19 +91,26 @@ class Chain(chainer.Chain):
         self.y = self.sequence(*x, test=self.test)
 
         if isinstance(self.y, tuple):
-            self.loss = self.lossfun(self.y[0], t)
-            for i, y in enumerate(self.y[1:]):
+            self.loss = 0
+            for i, y in enumerate(self.y):
                 self.branchloss = self.branchweight*self.lossfun(y, t)
                 self.loss += self.branchweight*self.branchloss
                 reporter.report({'branch{}loss'.format(i): self.branchloss}, self)
                 if self.compute_accuracy:
                     self.accuracy = self.accfun(y, t)
-                    reporter.report({'branch{}accuracy'.format(i): self.accuracy}, self)
+                    reporter.report({'branch{}accuracy'.format(i): self.accuracy}, self)       
+            # Overall accuracy and loss of the sequence
             reporter.report({'loss': self.loss}, self)
             if self.compute_accuracy:
-                #TODO: replace here
-                self.accuracy = self.ent_acc(t)
+                y, exited = self.sequence.predict(*x, ent_T=self.ent_T, test=self.test)
+                numexited = np.sum(exited).tolist()
+                numtotal = len(exited)
+                #print("numexited",numexited)
+                self.accuracy = self.accfun(y, t)
                 reporter.report({'accuracy': self.accuracy}, self)
+                reporter.report({'branch{}exit'.format(0): numexited}, self)
+                reporter.report({'branch{}exit'.format(1): numtotal-numexited}, self)
+                
         else:
             self.loss = self.lossfun(self.y, t)
             reporter.report({'loss': self.loss}, self)
