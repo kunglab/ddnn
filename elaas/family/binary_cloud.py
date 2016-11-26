@@ -8,7 +8,7 @@ from chainer_sequential.link import *
 from chainer_sequential.binary_link import *
 from chainer import functions as F
 
-class SimpleHybridFamily:
+class BinaryCloudFamily:
     def __init__(self, folder="_models/simple_hybrid", prefix=None, input_dims=1, output_dims=10):
         self.folder = folder
         self.prefix = prefix
