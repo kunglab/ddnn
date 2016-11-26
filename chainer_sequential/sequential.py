@@ -140,18 +140,18 @@ class Sequential(object):
 
     #def __call__(self, x, test=False):
     #    return self.links(x, test)
-    
+
     def entropy_filter(self, x, b, ent_T):
         xp = cuda.get_array_module(b)
         eb = entropy(F.softmax(b))
-        
+
         if xp != np:
             with cuda.get_device(eb.data):
                 exited = eb.data < ent_T
             exited = exited.get()
         else:
             exited = eb.data < ent_T
-            
+
         y_exit = []
         y_cont = []
         for i,idx in enumerate(exited):
@@ -159,18 +159,18 @@ class Sequential(object):
                 y_exit.append(b[i:i+1])
             else:
                 y_cont.append(x[i:i+1])
-        
+
         if len(y_exit) > 0:
             y_exit = F.vstack(y_exit)
         if len(y_cont) > 0:
             y_cont = F.vstack(y_cont)
         return y_exit,y_cont,exited
-    
+
     def predict(self, x, ent_T=None, test=True):
         # Return last layer result
         if ent_T is None:
             return self(x, test)
-        
+
         b = None
         for i, link in enumerate(self.links):
             if isinstance(link, Sequential):
@@ -190,7 +190,7 @@ class Sequential(object):
                 x = link(x, test=test)
             else:
                 x = link(x)
-        
+
         ys = []
         j = 0
         k = 0
@@ -201,8 +201,8 @@ class Sequential(object):
             else:
                 ys.append(x[k])
                 k = k + 1
-        return F.vstack(ys), exited        
-                    
+        return F.vstack(ys), exited
+
     def __call__(self, x, test=False):
         b = None
         for i, link in enumerate(self.links):

@@ -50,32 +50,35 @@ class Collection(object):
 
     def train(self, niters=10, bootstrap_nepochs=2):
         do = self.do
-
+        i = 0
         # Bootstrap epochs
         for point in do.get_bootstrap_points(bootstrap_nepochs):
-            print(point)
+            i += bootstrap_nepochs
+            print(i)
             if self.verbose:
                 print('Bootstrap: {}'.format(point))
 
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
             metas = dict(branch0accuracy=trainer.get_log_result("validation/main/branch0accuracy"),
-branch1accuracy=trainer.get_log_result("validation/main/branch1accuracy"),
-branch0exit=trainer.get_log_result("validation/main/branch0exit"),
-branch1exit=trainer.get_log_result("validation/main/branch1exit"), numsamples=trainer.get_log_result("validation/main/numsamples"))
+                         branch1accuracy=trainer.get_log_result("validation/main/branch1accuracy"),
+                         branch0exit=trainer.get_log_result("validation/main/branch0exit"),
+                         branch1exit=trainer.get_log_result("validation/main/branch1exit"),
+                         numsamples=trainer.get_log_result("validation/main/numsamples"))
             do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), metas=metas, **point)
 
         do.fit()
 
         # Train
-        i = 0
         while i < niters:
+            print(i)
             point = self.do.sample_point()
             i += max(1, point['nepochs'] - get_max_epoch(do, point))
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
             metas = dict(branch0accuracy=trainer.get_log_result("validation/main/branch0accuracy"),
-branch1accuracy=trainer.get_log_result("validation/main/branch1accuracy"),
-branch0exit=trainer.get_log_result("validation/main/branch0exit"),
-branch1exit=trainer.get_log_result("validation/main/branch1exit"), numsamples=trainer.get_log_result("validation/main/numsamples"))
+                         branch1accuracy=trainer.get_log_result("validation/main/branch1accuracy"),
+                         branch0exit=trainer.get_log_result("validation/main/branch0exit"),
+                         branch1exit=trainer.get_log_result("validation/main/branch1exit"),
+                         numsamples=trainer.get_log_result("validation/main/numsamples"))
             do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), metas=metas, **point)
             do.fit()
 
