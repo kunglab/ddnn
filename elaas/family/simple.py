@@ -78,7 +78,8 @@ class SimpleHybridFamily:
         else:
             name = ""
         for k,v in kwargs.iteritems():
-            if k=='nepochs':
+            # not saving params at test time in a different folder
+            if k=='nepochs' or k=='ent_T':
                 continue
             name = "{}_{}_{}".format(name, k, v)
         return name

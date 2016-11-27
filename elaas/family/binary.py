@@ -64,7 +64,7 @@ class BinaryFamily:
         else:
             name = ""
         for k,v in kwargs.iteritems():
-            if k=='nepochs':
+            if k=='nepochs' or k=='ent_T':
                 continue
             name = "{}_{}_{}".format(name, k, v)
         return name

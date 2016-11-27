@@ -9,7 +9,7 @@ from chainer_sequential.binary_link import *
 from chainer import functions as F
 
 class BinaryCloudFamily:
-    def __init__(self, folder="_models/simple_hybrid", prefix=None, input_dims=1, output_dims=10):
+    def __init__(self, folder="_models/binary_cloud", prefix=None, input_dims=1, output_dims=10):
         self.folder = folder
         self.prefix = prefix
         self.input_dims = input_dims
@@ -75,7 +75,7 @@ class BinaryCloudFamily:
         else:
             name = ""
         for k,v in kwargs.iteritems():
-            if k=='nepochs':
+            if k=='nepochs' or k=='ent_T':
                 continue
             name = "{}_{}_{}".format(name, k, v)
         return name
