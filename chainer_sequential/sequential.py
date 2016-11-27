@@ -13,12 +13,15 @@ import chainer.functions as F
 class Sequential(object):
     def __init__(self, weight_initializer="Normal", weight_init_std=1):
         self._layers = []
+        self._stages = []
         self.links = []
 
         self.weight_initializer = weight_initializer    # Normal / GlorotNormal / HeNormal
         self.weight_init_std = weight_init_std
+        self.current_stage = 0
 
-    def add(self, layer):
+    def add(self, layer, stages=[0]):
+        self._stages.append(stages)
         if isinstance(layer, Sequential):
             self._layers.append(layer)
         elif isinstance(layer, link.Link) or isinstance(layer, function.Function):
@@ -98,15 +101,22 @@ class Sequential(object):
 
     def to_dict(self):
         layers = []
-        for layer in self._layers:
+        stages = []
+        for layer,stage in zip(self._layers,self._stages):
             config = layer.to_dict()
+            if config.get("layers") is not None:
+                layers.append(config)
+                stages.append(stage)
+                continue
             dic = {}
             for key, value in config.iteritems():
                 if isinstance(value, (int, float, str, bool, type(None), tuple, list, dict)):
                     dic[key] = value
             layers.append(dic)
+            stages.append(stage)
         return {
             "layers": layers,
+            "stages": stages,
             "weight_initializer": self.weight_initializer,
             "weight_init_std": self.weight_init_std
         }
@@ -118,6 +128,7 @@ class Sequential(object):
     def from_json(self, str):
         self.links = []
         self._layers = []
+        self._stages = []
         attributes = {}
         dict_array = json.loads(str)
         self.from_dict(dict_array)
@@ -125,17 +136,20 @@ class Sequential(object):
     def from_dict(self, dict):
         self.weight_initializer = dict["weight_initializer"]
         self.weight_init_std = dict["weight_init_std"]
-        for i, layer_dict in enumerate(dict["layers"]):
+        for i, layer_dict_stage in enumerate(zip(dict["layers"],dict["stages"])):
+            layer_dict,stage = layer_dict_stage
             if layer_dict.get('layers') is not None:
                 layer = Sequential()
-                layer.from_json(json.dumps(layer_dict))
+                layer.from_dict(layer_dict)
                 self.links.append(layer)
                 self._layers.append(layer)
+                self._stages.append(stage)
             else:
                 layer = self.layer_from_dict(layer_dict)
                 link = self.layer_to_chainer_link(layer)
                 self.links.append(link)
                 self._layers.append(layer)
+                self._stages.append(stage)
 
 
     #def __call__(self, x, test=False):
@@ -166,17 +180,24 @@ class Sequential(object):
             y_cont = F.vstack(y_cont)
         return y_exit,y_cont,exited
 
-    def predict(self, x, ent_T=None, test=True):
+    def predict(self, x, ent_T=None, ent_Ts=None, test=True):
         # Return last layer result
-        if ent_T is None:
+        if ent_T is None and ent_Ts is None:
             return self(x, test)
+        elif ent_Ts is None:
+            ent_Ts = [ent_T]
 
-        b = None
+        num = x.shape[0]
+        bs = []
+        exit_i = 0
         for i, link in enumerate(self.links):
             if isinstance(link, Sequential):
                 b = link(x, test=test)
-                y_exit,y_cont,exited = self.entropy_filter(x, b, ent_T)
+                b = b[0]
+                y_exit,y_cont,exited = self.entropy_filter(x, b, ent_Ts[min(exit_i,len(ent_Ts)-1)])
+                exit_i = exit_i + 1
                 b = y_exit
+                bs.append((b,exited))
                 x = y_cont
                 if len(x) == 0:
                     break
@@ -191,23 +212,37 @@ class Sequential(object):
             else:
                 x = link(x)
 
-        ys = []
-        j = 0
-        k = 0
-        for exit in exited:
-            if exit:
-                ys.append(b[j])
-                j = j + 1
-            else:
-                ys.append(x[k])
-                k = k + 1
+        bs.append((x,[True]*x.shape[0]))
+        ys = [None]*num
+        for b,exited in bs:
+            i = 0
+            j = 0
+            for exit in exited:
+                while ys[i] is not None:
+                    i = i + 1
+                if exit:
+                    ys[i] = b[j]
+                    j = j + 1
+                i = i + 1
         return F.vstack(ys), exited
-
-    def __call__(self, x, test=False):
-        b = None
+    
+    def set_current_stage(self, stage):
+        self.current_stage = stage
         for i, link in enumerate(self.links):
             if isinstance(link, Sequential):
+                link.set_current_stage(stage)
+                
+    def get_current_stage(self):
+        return self.current_stage
+        
+    def __call__(self, x, test=False):
+        bs = []
+        for i, link in enumerate(self.links):
+            stage = self._stages[i]
+            if isinstance(link, Sequential):
                 b = link(x, test=test)
+                # Currently not support branch inside a branch
+                bs.append(b[0])
             elif isinstance(link, function.dropout):
                 x = link(x, train=not test)
             elif isinstance(link, chainer.links.BatchNormalization):
@@ -218,9 +253,10 @@ class Sequential(object):
                 x = link(x, test=test)
             else:
                 x = link(x)
-        if b is not None:
-            return (b,x)
-        return (x)
+            if not (self.current_stage in stage):
+                x.unchain_backward()
+        bs.append(x)
+        return tuple(bs)
 
     def generate_call(self):
         link_idx = 0
@@ -271,7 +307,7 @@ class Sequential(object):
         input_size = h.size
         inter_sizes = []
         for i, link in enumerate(self.links):
-            if isinstance(link, Sequential): # branch off to the first branch
+            if isinstance(link, Sequential): # branch off to the first branch only for now
                 for j, link in enumerate(link.links):
                     if hasattr(link, 'generate_c'):
                         inter_sizes.append(link.temp_mem(h.shape))

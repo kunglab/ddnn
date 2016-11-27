@@ -16,12 +16,16 @@ class Chain(chainer.Chain):
     compute_accuracy = True
 
     def __init__(self, lossfun=softmax_cross_entropy.softmax_cross_entropy,
-                 branchweight=1, ent_T=None,
+                 branchweight=1, ent_T=None, ent_Ts=None,
                  accfun=accuracy.accuracy):
         super(Chain,self).__init__()
         self.lossfun = lossfun
         self.branchweight = branchweight
-        self.ent_T = ent_T
+        #self.ent_T = ent_T
+        if ent_T is not None and ent_Ts is None:
+            self.ent_Ts = [ent_T]
+        else:
+            self.ent_Ts = ent_Ts
         self.accfun = accfun
         self.y = None
         self.loss = None
@@ -35,7 +39,8 @@ class Chain(chainer.Chain):
                 self.add_link("link_{}".format(i), link)
             elif isinstance(link, sequential.Sequential):
                 for j, link in enumerate(link.links):
-                    self.add_link("link_{}_{}".format(i,j), link)
+                    if isinstance(link, chainer.link.Link):
+                        self.add_link("link_{}_{}".format(i,j), link)
 
         self.sequence = sequence
         self.test = False
@@ -94,6 +99,8 @@ class Chain(chainer.Chain):
         if isinstance(self.y, tuple):
             self.loss = 0
             for i, y in enumerate(self.y):
+                #y = y[0]
+                #print(y.shape)
                 self.branchloss = self.branchweight*self.lossfun(y, t)
                 self.loss += self.branchweight*self.branchloss
                 reporter.report({'branch{}loss'.format(i): self.branchloss}, self)
@@ -103,7 +110,7 @@ class Chain(chainer.Chain):
             # Overall accuracy and loss of the sequence
             reporter.report({'loss': self.loss}, self)
             if self.compute_accuracy:
-                y, exited = self.sequence.predict(*x, ent_T=self.ent_T, test=self.test)
+                y, exited = self.sequence.predict(*x, ent_Ts=self.ent_Ts, test=self.test)
                 numexited = float(np.sum(exited).tolist())
                 numtotal = float(len(exited))
                 #print("numexited",numexited)
