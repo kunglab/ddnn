@@ -102,7 +102,7 @@ class BinaryBaseFixedFamily:
         chain, model = self.setup_chain_model(**kwargs)
 
         nepochs = int(kwargs.get("nepochs", 2))
-        pretrain_nepochs = int(kwargs.get("pretrain_nepochs", 10))
+        pretrain_nepochs = int(kwargs.get("pretrain_nepochs", 20))
         name = self.get_name(**kwargs)
         
         # Train stage 0

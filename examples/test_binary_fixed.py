@@ -26,10 +26,10 @@ mnist.add_trainset(train)
 mnist.add_testset(test)
 
 mnist.set_searchspace(
-    nfilters_embeded=[1],
+    nfilters_embeded=[64],
     nlayers_embeded=[2],
-    nfilters_cloud=[1],
-    nlayers_cloud=[1],
+    nfilters_cloud=[64],
+    nlayers_cloud=[2],
     lr=[1e-3],
     branchweight=[.1],
     ent_T=[0.0001, 0.001, 0.01, 0.1]

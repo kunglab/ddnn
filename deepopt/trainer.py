@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 
 class Trainer(object):
-    def __init__(self, folder, chain, train, test, batchsize=512, resume=True, gpu=0, nepoch=1):
+    def __init__(self, folder, chain, train, test, batchsize=500, resume=True, gpu=0, nepoch=1):
         self.nepoch = nepoch
         self.folder = folder
         self.chain = chain
@@ -31,7 +31,7 @@ class Trainer(object):
         updater = training.StandardUpdater(train_iter, chain.optimizer, device=gpu)
         trainer = training.Trainer(updater, (nepoch, 'epoch'), out=folder)
         # trainer.extend(TrainingModeSwitch(chain))
-        trainer.extend(extensions.Evaluator(test_iter, eval_chain, device=gpu))
+        trainer.extend(extensions.Evaluator(test_iter, eval_chain, device=gpu), trigger=(1,'epoch'))
         trainer.extend(extensions.snapshot_object(
             chain, 'chain_snapshot_epoch_{.updater.epoch:06}'), trigger=(1,'epoch'))
         trainer.extend(extensions.snapshot(

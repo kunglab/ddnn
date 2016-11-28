@@ -211,8 +211,9 @@ class Sequential(object):
                 x = link(x, test=test)
             else:
                 x = link(x)
-
-        bs.append((x,[True]*x.shape[0]))
+        
+        if len(x) > 0:
+            bs.append((x,[True]*x.shape[0]))
         ys = [None]*num
         for b,exited in bs:
             i = 0
@@ -242,6 +243,8 @@ class Sequential(object):
             if isinstance(link, Sequential):
                 b = link(x, test=test)
                 # Currently not support branch inside a branch
+                if self.current_stage not in stage:
+                    b[0].unchain_backward()
                 bs.append(b[0])
             elif isinstance(link, function.dropout):
                 x = link(x, train=not test)
@@ -253,7 +256,8 @@ class Sequential(object):
                 x = link(x, test=test)
             else:
                 x = link(x)
-            if not (self.current_stage in stage):
+            #print(self.current_stage,stage,self.current_stage not in stage)
+            if self.current_stage not in stage:
                 x.unchain_backward()
         bs.append(x)
         return tuple(bs)
