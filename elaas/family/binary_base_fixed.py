@@ -49,10 +49,10 @@ class BinaryBaseFixedFamily:
             floatbranch.add(Activation('relu'), [1])
             floatbranch.add(max_pooling_2d(3,1,1), [1])
         floatbranch.add(Linear(None, self.output_dims), [1])
-        
+
         #model.add(Activation('relu'))
         model.add(floatbranch, [1])
-        
+
         # binary branch
         for i in range(nlayers_cloud):
             if i == 0:
@@ -104,19 +104,19 @@ class BinaryBaseFixedFamily:
         nepochs = int(kwargs.get("nepochs", 2))
         pretrain_nepochs = int(kwargs.get("pretrain_nepochs", 10))
         name = self.get_name(**kwargs)
-        
+
         # Train stage 0
         model.set_current_stage(0)
         trainer = Trainer('{}/{}'.format(self.folder,name+"_pretrained"), chain, trainset,
                           testset, nepoch=pretrain_nepochs, resume=True)
-        
+
         acc, loss = trainer.run()
-        
+
         # Train stage 1
         model.set_current_stage(1)
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, nepoch=nepochs, resume=True)
-        
+
         acc, loss = trainer.run()
-        
+
         return trainer, model
