@@ -47,10 +47,15 @@ class BinaryBaseFixedFamily:
             floatbranch.add(Convolution2D(nfilters, nfilters_cloud, 3, 1, 1), [1])
             floatbranch.add(BatchNormalization(nfilters_cloud), [1])
             floatbranch.add(Activation('relu'), [1])
+            # Note: should we move pool to before batch norm like in binary?
             floatbranch.add(max_pooling_2d(3,1,1), [1])
         floatbranch.add(Linear(None, self.output_dims), [1])
+<<<<<<< HEAD
 
         #model.add(Activation('relu'))
+=======
+        
+>>>>>>> a52e954834783c55127b3ca45f019fc8a2158ec3
         model.add(floatbranch, [1])
 
         # binary branch
@@ -102,12 +107,12 @@ class BinaryBaseFixedFamily:
         chain, model = self.setup_chain_model(**kwargs)
 
         nepochs = int(kwargs.get("nepochs", 2))
-        pretrain_nepochs = int(kwargs.get("pretrain_nepochs", 10))
+        pretrain_nepochs = int(kwargs.get("pretrain_nepochs", 20))
         name = self.get_name(**kwargs)
 
         # Train stage 0
         model.set_current_stage(0)
-        trainer = Trainer('{}/{}'.format(self.folder,name+"_pretrained"), chain, trainset,
+        trainer = Trainer('{}/{}'.format(self.folder,"pretrained_" + name), chain, trainset,
                           testset, nepoch=pretrain_nepochs, resume=True)
 
         acc, loss = trainer.run()

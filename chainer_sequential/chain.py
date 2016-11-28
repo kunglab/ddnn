@@ -101,9 +101,11 @@ class Chain(chainer.Chain):
             for i, y in enumerate(self.y):
                 #y = y[0]
                 #print(y.shape)
-                self.branchloss = self.branchweight*self.lossfun(y, t)
-                self.loss += self.branchweight*self.branchloss
-                reporter.report({'branch{}loss'.format(i): self.branchloss}, self)
+                bloss = self.branchweight*self.lossfun(y, t)
+                xp = chainer.cuda.cupy.get_array_module(bloss.data)
+                if not xp.isnan(bloss.data):
+                    self.loss += self.branchweight*bloss
+                reporter.report({'branch{}loss'.format(i): bloss}, self)
                 if self.compute_accuracy:
                     self.accuracy = self.accfun(y, t)
                     reporter.report({'branch{}accuracy'.format(i): self.accuracy}, self)       
