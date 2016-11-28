@@ -61,8 +61,10 @@ class Collection(object):
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
             metas = dict(branch0accuracy=trainer.get_log_result("validation/main/branch0accuracy"),
                          branch1accuracy=trainer.get_log_result("validation/main/branch1accuracy"),
+                         branch2accuracy=trainer.get_log_result("validation/main/branch2accuracy"),
                          branch0exit=trainer.get_log_result("validation/main/branch0exit"),
                          branch1exit=trainer.get_log_result("validation/main/branch1exit"),
+                         branch2exit=trainer.get_log_result("validation/main/branch2exit"),
                          numsamples=trainer.get_log_result("validation/main/numsamples"))
             do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), metas=metas, **point)
 
@@ -76,8 +78,10 @@ class Collection(object):
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
             metas = dict(branch0accuracy=trainer.get_log_result("validation/main/branch0accuracy"),
                          branch1accuracy=trainer.get_log_result("validation/main/branch1accuracy"),
+                         branch1accuracy=trainer.get_log_result("validation/main/branch2accuracy"),
                          branch0exit=trainer.get_log_result("validation/main/branch0exit"),
                          branch1exit=trainer.get_log_result("validation/main/branch1exit"),
+                         branch2exit=trainer.get_log_result("validation/main/branch2exit"),
                          numsamples=trainer.get_log_result("validation/main/numsamples"))
             do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result("validation/main/accuracy"), metas=metas, **point)
             do.fit()

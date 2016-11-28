@@ -51,7 +51,6 @@ class BinaryBaseFixedFamily:
             floatbranch.add(max_pooling_2d(3,1,1), [1])
         floatbranch.add(Linear(None, self.output_dims), [1])
         
-        #model.add(Activation('relu'))
         model.add(floatbranch, [1])
         
         # binary branch
