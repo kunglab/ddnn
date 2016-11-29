@@ -9,19 +9,19 @@ from chainer import cuda
 import inspect
 from chainer_ext.functions import entropy
 import chainer.functions as F
-
+from chainer import Variable
+                
 class Sequential(object):
-    def __init__(self, weight_initializer="Normal", weight_init_std=1):
+    def __init__(self, stages=[0], weight_initializer="Normal", weight_init_std=1):
         self._layers = []
-        self._stages = []
+        self._stages = stages
         self.links = []
 
         self.weight_initializer = weight_initializer    # Normal / GlorotNormal / HeNormal
         self.weight_init_std = weight_init_std
         self.current_stage = 0
 
-    def add(self, layer, stages=[0]):
-        self._stages.append(stages)
+    def add(self, layer):
         if isinstance(layer, Sequential):
             self._layers.append(layer)
         elif isinstance(layer, link.Link) or isinstance(layer, function.Function):
@@ -101,22 +101,19 @@ class Sequential(object):
 
     def to_dict(self):
         layers = []
-        stages = []
-        for layer,stage in zip(self._layers,self._stages):
+        for layer in self._layers:
             config = layer.to_dict()
             if config.get("layers") is not None:
                 layers.append(config)
-                stages.append(stage)
                 continue
             dic = {}
             for key, value in config.iteritems():
                 if isinstance(value, (int, float, str, bool, type(None), tuple, list, dict)):
                     dic[key] = value
             layers.append(dic)
-            stages.append(stage)
         return {
             "layers": layers,
-            "stages": stages,
+            "stages": self._stages,
             "weight_initializer": self.weight_initializer,
             "weight_init_std": self.weight_init_std
         }
@@ -136,20 +133,18 @@ class Sequential(object):
     def from_dict(self, dict):
         self.weight_initializer = dict["weight_initializer"]
         self.weight_init_std = dict["weight_init_std"]
-        for i, layer_dict_stage in enumerate(zip(dict["layers"],dict["stages"])):
-            layer_dict,stage = layer_dict_stage
+        self._stages = dict["stages"]
+        for i, layer_dict in enumerate(dict["layers"]):
             if layer_dict.get('layers') is not None:
-                layer = Sequential()
+                layer = Sequential(stages=layer_dict["stages"])
                 layer.from_dict(layer_dict)
                 self.links.append(layer)
                 self._layers.append(layer)
-                self._stages.append(stage)
             else:
                 layer = self.layer_from_dict(layer_dict)
                 link = self.layer_to_chainer_link(layer)
                 self.links.append(link)
                 self._layers.append(layer)
-                self._stages.append(stage)
 
 
     #def __call__(self, x, test=False):
@@ -238,28 +233,35 @@ class Sequential(object):
         
     def __call__(self, x, test=False):
         bs = []
+        numlinks = len(self.links)
         for i, link in enumerate(self.links):
-            stage = self._stages[i]
             if isinstance(link, Sequential):
-                b = link(x, test=test)
-                # Currently not support branch inside a branch
-                if self.current_stage not in stage:
-                    b[0].unchain_backward()
+                # detach if in different stages
+                #if reduce(lambda x,y: x and y, [stage not in link._stages for stage in self._stages]):
+                if self.current_stage not in link._stages:
+                    y = Variable(x.data, x.volatile)
+                else:
+                    y = x
+                b = link(y, test=test)
                 bs.append(b[0])
+                # Currently not support branch inside a branch
             elif isinstance(link, function.dropout):
                 x = link(x, train=not test)
             elif isinstance(link, chainer.links.BatchNormalization):
                 x = link(x, test=test)
             elif hasattr(link,'__call__') and 'train' in inspect.getargspec(link.__call__)[0]:
+                #print("train",link)
                 x = link(x, train=not test)
             elif hasattr(link,'__call__') and 'test' in inspect.getargspec(link.__call__)[0]:
+                #print("test",link)
                 x = link(x, test=test)
             else:
                 x = link(x)
-            #print(self.current_stage,stage,self.current_stage not in stage)
-            if self.current_stage not in stage:
+            # do not update this branch if not the current stage
+            if self.current_stage not in self._stages:
                 x.unchain_backward()
         bs.append(x)
+        #print(bs)
         return tuple(bs)
 
     def generate_call(self):

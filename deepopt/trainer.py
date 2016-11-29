@@ -14,31 +14,33 @@ class Trainer(object):
         self.folder = folder
         self.chain = chain
         self.gpu = gpu
-
+        
         if self.gpu >= 0:
             chainer.cuda.get_device(gpu).use()
             chain.to_gpu(gpu)
-        eval_chain = chain.copy()
-        eval_chain.test = True
+        self.eval_chain = eval_chain = chain.copy()
+        self.chain.test = False
+        self.eval_chain.test = True
 
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        train_iter = chainer.iterators.SerialIterator(train, batchsize)
+        train_iter = chainer.iterators.SerialIterator(train, batchsize, shuffle=False)
         test_iter = chainer.iterators.SerialIterator(test, batchsize,
                                                      repeat=False, shuffle=False)
 
         updater = training.StandardUpdater(train_iter, chain.optimizer, device=gpu)
         trainer = training.Trainer(updater, (nepoch, 'epoch'), out=folder)
         # trainer.extend(TrainingModeSwitch(chain))
+        trainer.extend(extensions.dump_graph('main/loss'))
         trainer.extend(extensions.Evaluator(test_iter, eval_chain, device=gpu), trigger=(1,'epoch'))
         trainer.extend(extensions.snapshot_object(
             chain, 'chain_snapshot_epoch_{.updater.epoch:06}'), trigger=(1,'epoch'))
         trainer.extend(extensions.snapshot(
             filename='snapshot_epoch_{.updater.epoch:06}'), trigger=(1,'epoch'))
         trainer.extend(extensions.LogReport(trigger=(1,'epoch')), trigger=(1,'iteration'))
-        #trainer.extend(extensions.PrintReport(
-        #    ['iteration','main/branch0exit','main/branch1exit']), trigger=IntervalTrigger(1,'iteration'))
+        trainer.extend(extensions.PrintReport(
+            ['epoch','validation/main/branch0accuracy','validation/main/branch1accuracy','validation/main/branch2accuracy']), trigger=IntervalTrigger(1,'epoch'))
 
         if resume:
             i = 1
@@ -54,15 +56,23 @@ class Trainer(object):
         self.trainer = trainer
 
     def run(self):
+        if self.gpu >= 0:
+            chainer.cuda.get_device(self.gpu).use()
+            self.chain.to_gpu(self.gpu)
+            self.eval_chain.to_gpu(self.gpu)
+        self.chain.test = False
+        self.eval_chain.test = True
+            
         self.trainer.run()
-        ext = self.trainer.get_extension('validation')()
-        test_accuracy = ext['validation/main/accuracy']
-        test_loss = ext['validation/main/loss']
-        acc = test_accuracy.tolist()
-        loss = test_loss.tolist()
+        #ext = self.trainer.get_extension('validation')()
+        #test_accuracy = ext['validation/main/accuracy']
+        #test_loss = ext['validation/main/loss']
+        #acc = test_accuracy.tolist()
+        #loss = test_loss.tolist()
         if self.gpu >= 0:
             self.chain.to_cpu()
-        return acc,loss
+        return
+        #return acc,loss
 
     # Deprecated
     def get_result(self, key):

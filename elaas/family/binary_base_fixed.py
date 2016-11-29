@@ -38,20 +38,20 @@ class BinaryBaseFixedFamily:
         model.add(branch)
 
         # float branch
-        floatbranch = Sequential()
+        floatbranch = Sequential(stages=[1])
         for i in range(nlayers_cloud):
             if i == 0:
                 nfilters = nfilters_embeded
             else:
                 nfilters = nfilters_cloud
-            floatbranch.add(Convolution2D(nfilters, nfilters_cloud, 3, 1, 1), [1])
-            floatbranch.add(BatchNormalization(nfilters_cloud), [1])
-            floatbranch.add(Activation('relu'), [1])
+            floatbranch.add(Convolution2D(nfilters, nfilters_cloud, 3, 1, 1))
+            floatbranch.add(BatchNormalization(nfilters_cloud))
+            floatbranch.add(Activation('relu'))
             # Note: should we move pool to before batch norm like in binary?
-            floatbranch.add(max_pooling_2d(3,1,1), [1])
-        floatbranch.add(Linear(None, self.output_dims), [1])
+            floatbranch.add(max_pooling_2d(3,1,1))
+        floatbranch.add(Linear(None, self.output_dims))
         
-        model.add(floatbranch, [1])
+        model.add(floatbranch)
         
         # binary branch
         for i in range(nlayers_cloud):
@@ -95,7 +95,7 @@ class BinaryBaseFixedFamily:
         for k,v in kwargs.iteritems():
             if k=='nepochs' or k=='ent_T':
                 continue
-            name = "{}_{}_{}".format(name, k, v)
+            name = "{}_{}_{}".format(name, k, float(v))
         return name
 
     def train_model(self, trainset, testset, **kwargs):
@@ -110,13 +110,13 @@ class BinaryBaseFixedFamily:
         trainer = Trainer('{}/{}'.format(self.folder,"pretrained_" + name), chain, trainset,
                           testset, nepoch=pretrain_nepochs, resume=True)
         
-        acc, loss = trainer.run()
+        trainer.run()
         
         # Train stage 1
         model.set_current_stage(1)
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, nepoch=nepochs, resume=True)
         
-        acc, loss = trainer.run()
+        trainer.run()
         
         return trainer, model

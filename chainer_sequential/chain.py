@@ -15,7 +15,7 @@ from chainer import link
 class Chain(chainer.Chain):
     compute_accuracy = True
 
-    def __init__(self, lossfun=softmax_cross_entropy.softmax_cross_entropy,
+    def __init__(self, compute_accuracy=True, lossfun=softmax_cross_entropy.softmax_cross_entropy,
                  branchweight=1, ent_T=None, ent_Ts=None,
                  accfun=accuracy.accuracy):
         super(Chain,self).__init__()
@@ -30,6 +30,7 @@ class Chain(chainer.Chain):
         self.y = None
         self.loss = None
         self.accuracy = None
+        self.compute_accuracy = compute_accuracy
 
     def add_sequence(self, sequence):
         if isinstance(sequence, sequential.Sequential) == False:
@@ -37,10 +38,12 @@ class Chain(chainer.Chain):
         for i, link in enumerate(sequence.links):
             if isinstance(link, chainer.link.Link):
                 self.add_link("link_{}".format(i), link)
+                #print(link.name, link)
             elif isinstance(link, sequential.Sequential):
                 for j, link in enumerate(link.links):
                     if isinstance(link, chainer.link.Link):
                         self.add_link("link_{}_{}".format(i,j), link)
+                        #print(link.name, link)
 
         self.sequence = sequence
         self.test = False
@@ -94,17 +97,17 @@ class Chain(chainer.Chain):
         self.accuracy = None
 
         self.y = self.sequence(*x, test=self.test)
-
+        
         reporter.report({'numsamples': float(x[0].shape[0])}, self)
         if isinstance(self.y, tuple):
             self.loss = 0
             for i, y in enumerate(self.y):
                 #y = y[0]
-                #print(y.shape)
-                bloss = self.branchweight*self.lossfun(y, t)
+                # TODO fix branchweight
+                bloss = self.lossfun(y, t)
                 xp = chainer.cuda.cupy.get_array_module(bloss.data)
-                if not xp.isnan(bloss.data):
-                    self.loss += self.branchweight*bloss
+                if y.creator is not None and not xp.isnan(bloss.data):
+                    self.loss += bloss
                 reporter.report({'branch{}loss'.format(i): bloss}, self)
                 if self.compute_accuracy:
                     self.accuracy = self.accfun(y, t)
@@ -112,20 +115,26 @@ class Chain(chainer.Chain):
             # Overall accuracy and loss of the sequence
             reporter.report({'loss': self.loss}, self)
             if self.compute_accuracy:
-                y, exited = self.sequence.predict(*x, ent_Ts=self.ent_Ts, test=self.test)
+                # TODO support multiple exit branch
+                y, exited = self.sequence.predict(*x, ent_Ts=self.ent_Ts, test=True)
                 numexited = float(np.sum(exited).tolist())
                 numtotal = float(len(exited))
                 #print("numexited",numexited)
                 self.accuracy = self.accfun(y, t)
                 reporter.report({'accuracy': self.accuracy}, self)
-                reporter.report({'branch{}exit'.format(0): numexited}, self)
-                reporter.report({'branch{}exit'.format(1): numtotal-numexited}, self)
+                reporter.report({'branch{}exit'.format(0): float(numexited)}, self)
+                reporter.report({'branch{}exit'.format(1): float(numtotal-numexited)}, self)
+            else:
+                reporter.report({'accuracy': 0.0}, self)
+                reporter.report({'branch{}exit'.format(0): 0.0}, self)
+                reporter.report({'branch{}exit'.format(1): 0.0}, self)
+
                 
-        else:
-            self.loss = self.lossfun(self.y, t)
-            reporter.report({'loss': self.loss}, self)
-            if self.compute_accuracy:
-                self.accuracy = self.accfun(self.y, t)
-                reporter.report({'accuracy': self.accuracy}, self)
+        #else:
+        #    self.loss = self.lossfun(self.y, t)
+        #    reporter.report({'loss': self.loss}, self)
+        #    if self.compute_accuracy:
+        #        self.accuracy = self.accfun(self.y, t)
+        #        reporter.report({'accuracy': self.accuracy}, self)
 
         return self.loss

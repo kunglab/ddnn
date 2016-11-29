@@ -72,7 +72,7 @@ class Collection(object):
 
         # Train
         while i < niters:
-            print(i)
+            #print(i)
             point = self.do.sample_point()
             i += max(1, point['nepochs'] - get_max_epoch(do, point))
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)

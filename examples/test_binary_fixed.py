@@ -13,7 +13,7 @@ import deepopt.chooser
 parser = argparse.ArgumentParser(description='Hybrid Example')
 parser.add_argument('-s', '--save_dir', default='_models')
 parser.add_argument('--iters', type=int, default=100)
-parser.add_argument('-e', '--epochs', type=int,  default=20)
+parser.add_argument('-e', '--epochs', type=int,  default=10)
 parser.add_argument('-b', '--bootstrap_epochs', type=int,  default=2)
 parser.add_argument('-v', '--verbose', action='store_true')
 args = parser.parse_args()
@@ -22,17 +22,23 @@ mnist = Collection('binary_base_fixed', args.save_dir, nepochs=args.epochs, verb
 mnist.set_model_family(BinaryBaseFixedFamily)
 
 train, test = chainer.datasets.get_mnist(ndim=3)
+
+#from chainer.datasets.sub_dataset import SubDataset
+#train = SubDataset(train, 0, 500)
+#test = SubDataset(train, 0, 500)
+
 mnist.add_trainset(train)
 mnist.add_testset(test)
 
 mnist.set_searchspace(
+    pretrain_nepochs=[2],
     nfilters_embeded=[64],
     nlayers_embeded=[2],
     nfilters_cloud=[64],
     nlayers_cloud=[2],
     lr=[1e-3],
     branchweight=[.1],
-    ent_T=[0.0001, 0.001, 0.01, 0.1]
+    ent_T=[0.0001]
 )
 
 # mnist.set_searchspace(
