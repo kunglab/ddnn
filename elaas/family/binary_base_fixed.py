@@ -104,19 +104,15 @@ class BinaryBaseFixedFamily:
         nepochs = int(kwargs.get("nepochs", 2))
         pretrain_nepochs = int(kwargs.get("pretrain_nepochs", 20))
         name = self.get_name(**kwargs)
-        
+
         # Train stage 0
         model.set_current_stage(0)
         trainer = Trainer('{}/{}'.format(self.folder,"pretrained_" + name), chain, trainset,
                           testset, nepoch=pretrain_nepochs, resume=True)
-        
         trainer.run()
-        
         # Train stage 1
         model.set_current_stage(1)
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, nepoch=nepochs, resume=True)
-        
         trainer.run()
-        
         return trainer, model

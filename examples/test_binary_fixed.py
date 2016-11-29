@@ -10,6 +10,16 @@ from elaas.family.binary_base_fixed import BinaryBaseFixedFamily
 from visualize import visualize
 import deepopt.chooser
 
+def max_acc(trace):
+    acc = 0
+    best_idx =  0
+    for i, t in enumerate(trace):
+        if t['action'] == 'add_point':
+            acc = max(acc, t['y'])
+            best_idx = i
+    return acc, best_idx
+
+
 parser = argparse.ArgumentParser(description='Hybrid Example')
 parser.add_argument('-s', '--save_dir', default='_models')
 parser.add_argument('--iters', type=int, default=100)
@@ -38,7 +48,7 @@ mnist.set_searchspace(
     nlayers_cloud=[2],
     lr=[1e-3],
     branchweight=[.1],
-    ent_T=[0.0001]
+    ent_T=[100]
 )
 
 # mnist.set_searchspace(
@@ -62,9 +72,12 @@ mnist.set_chooser(deepopt.chooser.EpochChooser(k=5))
 
 # currently optimize based on the validation accuracy of the main model
 traces = mnist.train(niters=args.iters, bootstrap_nepochs=args.bootstrap_epochs)
-visualize.min_error(traces, args.save_dir)
-visualize.embed_memory_err(mnist.do, traces, args.save_dir)
-visualize.embed_transmit_err(mnist.do, traces, args.save_dir)
+idx, acc = max_acc(traces)
+print('Best Binary Acc: {:2.4f}'.format(acc*100.))
+
+# visualize.min_error(traces, args.save_dir)
+# visualize.embed_memory_err(mnist.do, traces, args.save_dir)
+# visualize.embed_transmit_err(mnist.do, traces, args.save_dir)
 
 # generate c
 # mnist.generate_c((1,28,28))

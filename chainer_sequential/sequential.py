@@ -206,7 +206,6 @@ class Sequential(object):
                 x = link(x, test=test)
             else:
                 x = link(x)
-        
         if len(x) > 0:
             bs.append((x,[True]*x.shape[0]))
         ys = [None]*num
@@ -221,16 +220,16 @@ class Sequential(object):
                     j = j + 1
                 i = i + 1
         return F.vstack(ys), exited
-    
+
     def set_current_stage(self, stage):
         self.current_stage = stage
         for i, link in enumerate(self.links):
             if isinstance(link, Sequential):
                 link.set_current_stage(stage)
-                
+
     def get_current_stage(self):
         return self.current_stage
-        
+
     def __call__(self, x, test=False):
         bs = []
         numlinks = len(self.links)
