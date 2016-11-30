@@ -10,11 +10,13 @@ from chainer_sequential.binary_link import *
 from chainer import functions as F
 
 class MultiInputFamily:
-    def __init__(self, folder="_models/multi_input", prefix=None, input_dims=1, output_dims=10):
+    def __init__(self, folder="_models/multi_input", prefix=None, input_dims=3, output_dims=3, batchsize=10, ninputs=2):
+        self.ninputs = ninputs
         self.folder = folder
         self.prefix = prefix
         self.input_dims = input_dims
         self.output_dims = output_dims
+        self.batchsize = batchsize
 
     def get_configurable_params(self):
         return ["nfilters_embeded", "nlayers_embeded", "nfilters_cloud", "nlayers_cloud", "branchweight", "lr", "ent_T"]
@@ -37,7 +39,7 @@ class MultiInputFamily:
         branch.add(BinaryLinearBNSoftmax(None, self.output_dims))
         input_model.add(branch)
 
-        model = MultiInputSequential(2)
+        model = MultiInputSequential(self.ninputs)
         model.add_input(input_model)
         model.add_input(input_model)
                 
@@ -98,7 +100,7 @@ class MultiInputFamily:
         name = self.get_name(**kwargs)
 
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
-                          testset, nepoch=nepochs, resume=True)
+                          testset, batchsize=self.batchsize, nepoch=nepochs, resume=True)
         trainer.run()
         
         return trainer, model

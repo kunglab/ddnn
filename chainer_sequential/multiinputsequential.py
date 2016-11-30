@@ -60,11 +60,10 @@ class MultiInputSequential(Sequential):
     def __call__(self, *inputs, **kwargs):
         test=kwargs.get('test',False)
         
-        hs = []
+        hs = [None]*len(self.inputs)
         for i,inp in enumerate(self.inputs):
             hs[i] = inp(inputs[i],test=test) # return a tuple of branch exit and main exit
-        
-        num_output = len(hs[0])
+        num_output = len(hs[0]) 
         
         # TODO: support other merge functions
         houts = []
@@ -75,11 +74,12 @@ class MultiInputSequential(Sequential):
             houts.append(x) # Merged branch exit and main exit
                     
         # get result of the main exit
-        mainh = list(super(MultiInputSequential, self).__call__(houts[1]))
+        tail = super(MultiInputSequential, self).__call__(houts[1], **kwargs)
+        mainh = list(tail)
         
         # branch exit
-        branchh = houts[0]
-        return tuple([branchh]+mainh)
+        branchh = [h[0] for h in hs]+[houts[0]]
+        return tuple(branchh+mainh)
 
     def generate_call(self):
         raise NotImplementedError()

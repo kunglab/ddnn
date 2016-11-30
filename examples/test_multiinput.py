@@ -4,11 +4,11 @@ sys.path.append('..')
 import argparse
 
 import chainer
-
+from datasets.datasets import get_mvmc, get_mvmc_flatten
+import deepopt.chooser
 from elaas.elaas import Collection
 from elaas.family.multi_input import MultiInputFamily
 from visualize import visualize
-import deepopt.chooser
 
 def max_acc(trace):
     acc = 0
@@ -31,11 +31,11 @@ args = parser.parse_args()
 mnist = Collection('multiinput', args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
 mnist.set_model_family(MultiInputFamily)
 
-from datasets.datasets import get_mvmc
 
-train, test = get_mvmc([0,1])
+train, test = get_mvmc_flatten([0,1])
 #train, test = chainer.datasets.get_cifar10(ndim=3)
-
+#print(train[1])
+#print(train[0][0].shape)
 #from chainer.datasets.sub_dataset import SubDataset
 #train = SubDataset(train, 0, 500)
 #test = SubDataset(train, 0, 500)
