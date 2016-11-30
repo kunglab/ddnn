@@ -1,4 +1,4 @@
-from chainer_sequential.chain import Chain
+from chainer_sequential.multiinputchain import MultiInputChain
 from deepopt.trainer import Trainer
 import chainer
 import chainer.serializers as S
@@ -75,7 +75,7 @@ class MultiInputFamily:
         ent_T = kwargs.get("ent_T", None)
         lr = kwargs.get("lr", 0.001)
 
-        chain = Chain(branchweight=branchweight, ent_T=ent_T)
+        chain = MultiInputChain(branchweight=branchweight, ent_T=ent_T)
         chain.add_sequence(model)
         chain.setup_optimizers('adam', lr)
         return chain, model
