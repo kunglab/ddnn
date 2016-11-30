@@ -26,16 +26,18 @@ parser.add_argument('--iters', type=int, default=100)
 parser.add_argument('-e', '--epochs', type=int,  default=40)
 parser.add_argument('-b', '--bootstrap_epochs', type=int,  default=2)
 parser.add_argument('-v', '--verbose', action='store_true')
+parser.add_argument('-n', '--ncams', type=int,  default=6)
 args = parser.parse_args()
 
-mnist = Collection('multiinput', args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
-mnist.set_model_family(MultiInputFamily)
+mnist = Collection('multiinput_{}'.format(args.ncams), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
 
+ncams = args.ncams
+mnist.set_model_family(MultiInputFamily,ninputs=ncams)
 
-train, test = get_mvmc_flatten([0,1])
+train, test = get_mvmc_flatten(range(ncams))
 #train, test = chainer.datasets.get_cifar10(ndim=3)
 #print(train[1])
-#print(train[0][0].shape)
+#print(len(train[0]))
 #from chainer.datasets.sub_dataset import SubDataset
 #train = SubDataset(train, 0, 500)
 #test = SubDataset(train, 0, 500)

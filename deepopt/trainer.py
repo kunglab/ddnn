@@ -9,7 +9,8 @@ from collections import defaultdict
 import numpy as np
 
 class Trainer(object):
-    def __init__(self, folder, chain, train, test, batchsize=500, resume=True, gpu=0, nepoch=1):
+    def __init__(self, folder, chain, train, test, batchsize=500, resume=True, gpu=0, nepoch=1, reports=[]):
+        self.reports = reports
         self.nepoch = nepoch
         self.folder = folder
         self.chain = chain
@@ -40,7 +41,7 @@ class Trainer(object):
             filename='snapshot_epoch_{.updater.epoch:06}'), trigger=(1,'epoch'))
         trainer.extend(extensions.LogReport(trigger=(1,'epoch')), trigger=(1,'iteration'))
         trainer.extend(extensions.PrintReport(
-            ['epoch','validation/main/branch0accuracy','validation/main/branch1accuracy','validation/main/branch2accuracy']), trigger=IntervalTrigger(1,'epoch'))
+            ['epoch']+reports), trigger=IntervalTrigger(1,'epoch'))
 
         self.trainer = trainer
         

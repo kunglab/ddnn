@@ -40,13 +40,13 @@ class MultiInputFamily:
         input_model.add(branch)
 
         model = MultiInputSequential(self.ninputs)
-        model.add_input(input_model)
-        model.add_input(input_model)
+        for i in range(self.ninputs):
+            model.add_input(input_model)
                 
         # float branch
         for i in range(nlayers_cloud):
             if i == 0:
-                nfilters = nfilters_embeded
+                nfilters = self.ninputs*nfilters_embeded
             else:
                 nfilters = nfilters_cloud
             model.add(Convolution2D(nfilters, nfilters_cloud, 3, 1, 1))
@@ -99,8 +99,18 @@ class MultiInputFamily:
         nepochs = int(kwargs.get("nepochs", 2))
         name = self.get_name(**kwargs)
 
+        reports = [
+         'validation/main/branch0accuracy',
+         'validation/main/branch1accuracy',
+         'validation/main/branch2accuracy',
+         'validation/main/branch3accuracy',
+         'validation/main/branch4accuracy',
+         'validation/main/branch5accuracy',
+         'validation/main/branch6accuracy',
+         'validation/main/branch7accuracy'
+        ]
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
-                          testset, batchsize=self.batchsize, nepoch=nepochs, resume=True)
+                          testset, batchsize=self.batchsize, nepoch=nepochs, resume=True, reports=reports)
         trainer.run()
         
         return trainer, model

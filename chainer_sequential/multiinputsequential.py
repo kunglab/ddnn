@@ -68,9 +68,10 @@ class MultiInputSequential(Sequential):
         # TODO: support other merge functions
         houts = []
         for i in range(num_output):
-            x = 0
-            for h in hs:
-                x = x + h[i]
+            #x = 0
+            #for h in hs:
+            #    x = x + h[i]
+            x = F.concat([h[i] for h in hs],1)
             houts.append(x) # Merged branch exit and main exit
                     
         # get result of the main exit
