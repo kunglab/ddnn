@@ -42,7 +42,17 @@ class Activation(object):
             return softplus()
         if self.nonlinearity.lower() == "tanh":
             return tanh()
+        if self.nonlinearity.lower() == "bst":
+            return bst()
         raise NotImplementedError()
+
+from .binary.functions import function_bst 
+class bst(Function):
+    def __init__(self):
+        self._function = "bst"
+
+    def __call__(self, x):
+        return function_bst.bst(x)
 
 class clipped_relu(Function):
     def __init__(self, z=20.0):

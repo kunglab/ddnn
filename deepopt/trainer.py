@@ -25,7 +25,7 @@ class Trainer(object):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        train_iter = chainer.iterators.SerialIterator(train, batchsize, shuffle=False)
+        train_iter = chainer.iterators.SerialIterator(train, batchsize, shuffle=True)
         test_iter = chainer.iterators.SerialIterator(test, batchsize,
                                                      repeat=False, shuffle=False)
 
@@ -42,7 +42,12 @@ class Trainer(object):
         trainer.extend(extensions.PrintReport(
             ['epoch','validation/main/branch0accuracy','validation/main/branch1accuracy','validation/main/branch2accuracy']), trigger=IntervalTrigger(1,'epoch'))
 
+        self.trainer = trainer
+        
         if resume:
+            #if resumeFrom is not None:
+            #    trainerFile = os.path.join(resumeFrom[0],'snapshot_epoch_{:06}'.format(resumeFrom[1]))
+            #    S.load_npz(trainerFile, trainer)
             i = 1
             trainerFile = os.path.join(folder,'snapshot_epoch_{:06}'.format(i))
             while i <= nepoch and os.path.isfile(trainerFile):
@@ -53,13 +58,11 @@ class Trainer(object):
             if i >= 0 and os.path.isfile(trainerFile):
                 S.load_npz(trainerFile, trainer)
 
-        self.trainer = trainer
 
     def run(self):
         if self.gpu >= 0:
             chainer.cuda.get_device(self.gpu).use()
             self.chain.to_gpu(self.gpu)
-            self.eval_chain.to_gpu(self.gpu)
         self.chain.test = False
         self.eval_chain.test = True
             

@@ -6,7 +6,7 @@ import argparse
 import chainer
 
 from elaas.elaas import Collection
-from elaas.family.binary_base_fixed import BinaryBaseFixedFamily
+from elaas.family.binary_float import BinaryFloatFamily
 from visualize import visualize
 import deepopt.chooser
 
@@ -23,13 +23,13 @@ def max_acc(trace):
 parser = argparse.ArgumentParser(description='Hybrid Example')
 parser.add_argument('-s', '--save_dir', default='_models')
 parser.add_argument('--iters', type=int, default=100)
-parser.add_argument('-e', '--epochs', type=int,  default=80)
+parser.add_argument('-e', '--epochs', type=int,  default=40)
 parser.add_argument('-b', '--bootstrap_epochs', type=int,  default=2)
 parser.add_argument('-v', '--verbose', action='store_true')
 args = parser.parse_args()
 
-mnist = Collection('binary_base_fixed_cifar10', args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
-mnist.set_model_family(BinaryBaseFixedFamily)
+mnist = Collection('binary_float_cifar10', args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
+mnist.set_model_family(BinaryFloatFamily)
 
 #train, test = chainer.datasets.get_mnist(ndim=3)
 train, test = chainer.datasets.get_cifar10(ndim=3)
@@ -42,7 +42,6 @@ mnist.add_trainset(train)
 mnist.add_testset(test)
 
 mnist.set_searchspace(
-    pretrain_nepochs=[20],
     nfilters_embeded=[64],
     nlayers_embeded=[2],
     nfilters_cloud=[64],

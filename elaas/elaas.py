@@ -5,11 +5,12 @@ from deepopt.chooser import get_max_epoch
 from .family.simple import SimpleHybridFamily
 
 class Collection(object):
-    def __init__(self, name, path="_models", nepochs=10, verbose=False):
+    def __init__(self, name, path="_models", input_dims=1, nepochs=10, verbose=False):
         self.name = name
         self.path = path
         self.folder = '{}/{}'.format(self.path,name)
         self.verbose = verbose
+        self.input_dims = input_dims
 
         self.searchspace = None
         self.set_model_family(SimpleHybridFamily)
@@ -30,8 +31,8 @@ class Collection(object):
     def set_chooser(self, chooser):
         self.do.set_chooser(chooser)
 
-    def set_model_family(self, family):
-        self.family = family(folder=self.folder)
+    def set_model_family(self, family, **kwargs):
+        self.family = family(folder=self.folder, input_dims=self.input_dims, **kwargs)
 
     def set_searchspace(self, **searchspace):
         self.searchspace = searchspace
