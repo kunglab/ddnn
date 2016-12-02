@@ -11,6 +11,7 @@ from chainer.functions.activation.softmax import softmax
 from chainer.functions.evaluation import accuracy
 from chainer.functions.loss import softmax_cross_entropy
 from chainer import link
+from chainer_ext import weight_clip
 
 class Chain(chainer.Chain):
 
@@ -84,6 +85,8 @@ class Chain(chainer.Chain):
             opt.add_hook(chainer.optimizer.WeightDecay(weight_decay))
         if gradient_clipping > 0:
             opt.add_hook(chainer.optimizer.GradientClipping(gradient_clipping))
+        # clip all weights to between 0 and 1
+        opt.add_hook(weight_clip.WeightClip())
         self.optimizer = opt
         return self.optimizer
 
