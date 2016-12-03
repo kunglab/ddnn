@@ -138,7 +138,7 @@ class BinaryConvolution2DFunction(function.Function):
 
     def backward_cpu(self, inputs, grad_outputs):
         x, W = inputs[:2]
-        Wb = numpy.where(W>=0, 1, 0).astype(numpy.float32, copy=False)
+        Wb = numpy.where(W>=0, 1, -1).astype(numpy.float32, copy=False)
         b = inputs[2] if len(inputs) == 3 else None
         gy = grad_outputs[0]
         h, w = x.shape[2:]

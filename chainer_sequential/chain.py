@@ -85,7 +85,7 @@ class Chain(chainer.Chain):
             opt.add_hook(chainer.optimizer.WeightDecay(weight_decay))
         if gradient_clipping > 0:
             opt.add_hook(chainer.optimizer.GradientClipping(gradient_clipping))
-        # clip all weights to between 0 and 1
+        # clip all weights to between -1 and 1
         opt.add_hook(weight_clip.WeightClip())
         self.optimizer = opt
         return self.optimizer

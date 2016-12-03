@@ -27,10 +27,13 @@ class WeightClip(object):
                 'p = (p < low) ? low : (p > high) ? high : p',
                 'weight_clip')
 
-        for param in opt.target.params():
-            p = param.data
-            with cuda.get_device(p) as dev:
-                if int(dev) == -1:
-                    numpy.clip(p, self.low, self.high)
-                else:
-                    kernel(self.low, self.high, p)
+        for link in opt.target.links():
+            # only apply to binary layers
+            if getattr(link,'cname',False):
+                for param in link.params():
+                    p = param.data
+                    with cuda.get_device(p) as dev:
+                        if int(dev) == -1:
+                            numpy.clip(p, self.low, self.high)
+                        else:
+                            kernel(self.low, self.high, p)
