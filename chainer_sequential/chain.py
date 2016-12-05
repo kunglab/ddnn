@@ -15,13 +15,14 @@ from chainer_ext import weight_clip
 
 class Chain(chainer.Chain):
 
-    def __init__(self, compute_accuracy=True, lossfun=softmax_cross_entropy.softmax_cross_entropy,
-                 branchweight=1, ent_T=None, ent_Ts=None,
+    def __init__(self, compute_accuracy=True, lossfun=softmax_cross_entropy.softmax_cross_entropy, branchweight=1, branchweights=None, ent_T=0.1, ent_Ts=None,
                  accfun=accuracy.accuracy):
         super(Chain,self).__init__()
         self.lossfun = lossfun
-        self.branchweight = branchweight
-        #self.ent_T = ent_T
+        if branchweight is not None and branchweights is None:
+            self.branchweights = [branchweight]
+        else:
+            self.branchweights = branchweights
         if ent_T is not None and ent_Ts is None:
             self.ent_Ts = [ent_T]
         else:
@@ -90,10 +91,7 @@ class Chain(chainer.Chain):
         self.optimizer = opt
         return self.optimizer
 
-    def __call__(self, *args):
-        x = args[:-1]
-        t = args[-1]
-
+    def evaluate(self,x,t):
         self.y = None
         self.loss = None
         self.accuracy = None
@@ -104,39 +102,36 @@ class Chain(chainer.Chain):
         if isinstance(self.y, tuple):
             self.loss = 0
             for i, y in enumerate(self.y):
-                #y = y[0]
-                # TODO fix branchweight
-                bloss = self.lossfun(y, t)
+                if hasattr(t,'__len__'):
+                    index = min(len(t)-1,i)
+                    tt = t[index]
+                else:
+                    tt = t
+                
+                branchweight = self.branchweights[min(i,len(self.branchweights)-1)]
+                bloss = self.lossfun(y, tt)
                 xp = chainer.cuda.cupy.get_array_module(bloss.data)
                 if y.creator is not None and not xp.isnan(bloss.data):
-                    self.loss += bloss
+                    self.loss += branchweight*bloss
+                reporter.report({'branch{}branchweight'.format(i): branchweight}, self)
                 reporter.report({'branch{}loss'.format(i): bloss}, self)
-                if self.compute_accuracy:
-                    self.accuracy = self.accfun(y, t)
-                    reporter.report({'branch{}accuracy'.format(i): self.accuracy}, self)       
+                self.accuracy = self.accfun(y, tt)
+                reporter.report({'branch{}accuracy'.format(i): self.accuracy}, self)       
             # Overall accuracy and loss of the sequence
             reporter.report({'loss': self.loss}, self)
             if self.compute_accuracy:
-                # TODO support multiple exit branch
-                y, exited = self.sequence.predict(*x, ent_Ts=self.ent_Ts, test=self.test)
-                numexited = float(np.sum(exited).tolist())
-                numtotal = float(len(exited))
-                #print("numexited",numexited)
-                self.accuracy = self.accfun(y, t)
+                y, exits = self.sequence.predict(*x, ent_Ts=self.ent_Ts, test=True)
+                self.accuracy = self.accfun(y, t[-1])
                 reporter.report({'accuracy': self.accuracy}, self)
-                reporter.report({'branch{}exit'.format(0): float(numexited)}, self)
-                reporter.report({'branch{}exit'.format(1): float(numtotal-numexited)}, self)
+                for i,exit in enumerate(exits):
+                    reporter.report({'branch{}exit'.format(i): float(exit)}, self)
             else:
                 reporter.report({'accuracy': 0.0}, self)
-                reporter.report({'branch{}exit'.format(0): 0.0}, self)
-                reporter.report({'branch{}exit'.format(1): 0.0}, self)
-
-                
-        #else:
-        #    self.loss = self.lossfun(self.y, t)
-        #    reporter.report({'loss': self.loss}, self)
-        #    if self.compute_accuracy:
-        #        self.accuracy = self.accfun(self.y, t)
-        #        reporter.report({'accuracy': self.accuracy}, self)
 
         return self.loss
+    
+    def __call__(self, *args):
+        x = args[:-1]
+        t = args[-1]
+        return self.evaluate(x,t)
+        

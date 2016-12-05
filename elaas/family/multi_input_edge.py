@@ -10,13 +10,14 @@ from chainer_sequential.binary_link import *
 from chainer import functions as F
 
 class MultiInputEdgeFamily:
-    def __init__(self, folder="_models/multi_input", prefix=None, input_dims=3, output_dims=3, batchsize=10, ninputs=2):
+    def __init__(self, folder="_models/multi_input", prefix=None, input_dims=3, output_dims=3, batchsize=10, ninputs=2, merge_function="max_pool_concat"):
         self.ninputs = ninputs
         self.folder = folder
         self.prefix = prefix
         self.input_dims = input_dims
         self.output_dims = output_dims
         self.batchsize = batchsize
+        self.merge_function = merge_function
 
     def get_configurable_params(self):
         return ["nfilters_embeded", "nlayers_embeded", "nfilters_cloud", "nlayers_cloud", "branchweight", "lr", "ent_T"]
@@ -39,14 +40,23 @@ class MultiInputEdgeFamily:
         branch.add(BinaryLinearBNSoftmax(None, self.output_dims))
         input_model.add(branch)
 
-        model = MultiInputSequential(self.ninputs)
+        model = MultiInputSequential(self.ninputs, merge_function=self.merge_function)
         for i in range(self.ninputs):
             model.add_input(input_model)
-          
+        
+        # Local branch
+        local_branch = Sequential()
+        local_branch.add(Linear(None, self.output_dims))
+        local_branch.add(BatchNormalization(self.output_dims))
+        model.add_local(local_branch)
+        
         # Edge branches
         for i in range(nlayers_cloud):
             if i == 0:
-                nfilters = self.ninputs*nfilters_embeded
+                if 'concat' in self.merge_function:
+                    nfilters = self.ninputs*nfilters_embeded
+                else:
+                    nfilters = nfilters_embeded
             else:
                 nfilters = nfilters_cloud
             model.add(Convolution2D(nfilters, nfilters_cloud, 3, 1, 1))
@@ -122,7 +132,8 @@ class MultiInputEdgeFamily:
          'validation/main/branch5accuracy',
          'validation/main/branch6accuracy',
          'validation/main/branch7accuracy',
-         'validation/main/branch8accuracy'
+         'validation/main/branch8accuracy',
+         'validation/main/accuracy',
         ]
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, batchsize=self.batchsize, nepoch=nepochs, resume=True, reports=reports)

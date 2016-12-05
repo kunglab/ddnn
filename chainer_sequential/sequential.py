@@ -150,11 +150,23 @@ class Sequential(object):
     #def __call__(self, x, test=False):
     #    return self.links(x, test)
 
+    def entropy_exit(self, b, ent_T):
+        xp = cuda.get_array_module(b)
+        eb = entropy(F.softmax(b))
+
+        if hasattr(eb.data,'get'):
+            with cuda.get_device(eb.data):
+                exited = eb.data < ent_T
+            exited = exited.get()
+        else:
+            exited = eb.data < ent_T
+        return exited
+    
     def entropy_filter(self, x, b, ent_T):
         xp = cuda.get_array_module(b)
         eb = entropy(F.softmax(b))
 
-        if xp != np:
+        if hasattr(eb.data,'get'):
             with cuda.get_device(eb.data):
                 exited = eb.data < ent_T
             exited = exited.get()
@@ -175,13 +187,8 @@ class Sequential(object):
             y_cont = F.vstack(y_cont)
         return y_exit,y_cont,exited
 
-    def predict(self, x, ent_T=None, ent_Ts=None, test=True):
+    def predict(self, x, ent_Ts=None, test=True):
         # Return last layer result
-        if ent_T is None and ent_Ts is None:
-            return self(x, test)
-        elif ent_Ts is None:
-            ent_Ts = [ent_T]
-
         num = x.shape[0]
         bs = []
         exit_i = 0
@@ -206,19 +213,35 @@ class Sequential(object):
                 x = link(x, test=test)
             else:
                 x = link(x)
-        if len(x) > 0:
-            bs.append((x,[True]*x.shape[0]))
+        #if len(x) > 0:
+        #    bs.append((x,[True]*x.shape[0]))
         ys = [None]*num
-        for b,exited in bs:
+        exited = [False]*num
+        # branch exit
+        for b,ex in bs:
             i = 0
             j = 0
-            for exit in exited:
+            for exit in ex:
+                while ys[i] is not None:
+                    i = i + 1
+                if exit:
+                    ys[i] = b[j]
+                    exited[i] = True #only count the branch exited
+                    j = j + 1
+                i = i + 1
+        # main exit
+        if len(x) > 0:
+            b,ex = (x,[True]*x.shape[0])
+            i = 0
+            j = 0
+            for exit in ex:
                 while ys[i] is not None:
                     i = i + 1
                 if exit:
                     ys[i] = b[j]
                     j = j + 1
                 i = i + 1
+        
         return F.vstack(ys), exited
 
     def set_current_stage(self, stage):
