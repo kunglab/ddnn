@@ -32,7 +32,7 @@ args = parser.parse_args()
 mnist = Collection('multiinput_edge_cccc_{}'.format(args.ncams), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
 
 ncams = args.ncams
-mnist.set_model_family(MultiInputEdgeFamily,ninputs=ncams,batchsize=100,merge_function="concat")
+mnist.set_model_family(MultiInputEdgeFamily,ninputs=ncams,batchsize=400,merge_function="concat")
 
 train, test = get_mvmc_flatten(range(ncams))
 #train, test = chainer.datasets.get_cifar10(ndim=3)
@@ -76,8 +76,8 @@ mnist.set_chooser(deepopt.chooser.EpochChooser(k=5))
 
 # currently optimize based on the validation accuracy of the main model
 traces = mnist.train(niters=args.iters, bootstrap_nepochs=args.bootstrap_epochs)
-idx, acc = max_acc(traces)
-print('Best Binary Acc: {:2.4f}'.format(acc*100.))
+#idx, acc = max_acc(traces)
+#print('Best Binary Acc: {:2.4f}'.format(acc*100.))
 
 # visualize.min_error(traces, args.save_dir)
 # visualize.embed_memory_err(mnist.do, traces, args.save_dir)

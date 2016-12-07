@@ -23,18 +23,18 @@ def max_acc(trace):
 parser = argparse.ArgumentParser(description='Hybrid Example')
 parser.add_argument('-s', '--save_dir', default='_models')
 parser.add_argument('--iters', type=int, default=100)
-parser.add_argument('-e', '--epochs', type=int,  default=40)
-parser.add_argument('-b', '--bootstrap_epochs', type=int,  default=2)
+parser.add_argument('-e', '--epochs', type=int,  default=80)
+parser.add_argument('-b', '--bootstrap_epochs', type=int,  default=80)
 parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('-n', '--ncams', type=int,  default=6)
 args = parser.parse_args()
 
-mnist = Collection('multiinput_edge_apap_{}'.format(args.ncams), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
+mnist = Collection('multiinput_threshold_cccc_{}'.format(args.ncams), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
 
 ncams = args.ncams
-mnist.set_model_family(MultiInputEdgeFamily,ninputs=ncams,batchsize=400,merge_function="avg_pool")
+mnist.set_model_family(MultiInputEdgeFamily,ninputs=ncams,batchsize=100,merge_function="concat")
 
-train, test = get_mvmc_flatten(range(ncams))
+train, test = get_mvmc_flatten(range(ncams),.6)
 #train, test = chainer.datasets.get_cifar10(ndim=3)
 #print(train[1])
 #print(len(train[0]))
@@ -46,11 +46,11 @@ mnist.add_trainset(train)
 mnist.add_testset(test)
 
 mnist.set_searchspace(
-    nfilters_embeded=[16],
+    nfilters_embeded=[1,2,3,4],
     nlayers_embeded=[2],
     nfilters_cloud=[16],
     nlayers_cloud=[2],
-    lr=[1e-3],
+    lr=[5e-4],
     branchweight=[1],
     ent_T=[.7]
 )
@@ -72,7 +72,7 @@ def constraintfn(**kwargs):
 mnist.set_constraints(constraintfn)
 
 # switch chooser
-mnist.set_chooser(deepopt.chooser.EpochChooser(k=5))
+mnist.set_chooser(deepopt.chooser.GridChooser())
 
 # currently optimize based on the validation accuracy of the main model
 traces = mnist.train(niters=args.iters, bootstrap_nepochs=args.bootstrap_epochs)

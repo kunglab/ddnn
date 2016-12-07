@@ -113,6 +113,7 @@ class MultiInputEdgeFamily:
             name = ""
         for k,v in kwargs.iteritems():
             if k=='nepochs' or k=='ent_T':
+            #if k=='nepochs':
                 continue
             name = "{}_{}_{}".format(name, k, float(v))
         return name
@@ -121,9 +122,11 @@ class MultiInputEdgeFamily:
         chain, model = self.setup_chain_model(**kwargs)
 
         nepochs = int(kwargs.get("nepochs", 2))
+        ent_T = kwargs.get("ent_T", None)
         name = self.get_name(**kwargs)
 
         reports = [
+         'epoch',
          'validation/main/branch0accuracy',
          'validation/main/branch1accuracy',
          'validation/main/branch2accuracy',
@@ -134,9 +137,16 @@ class MultiInputEdgeFamily:
          'validation/main/branch7accuracy',
          'validation/main/branch8accuracy',
          'validation/main/accuracy',
+         'validation/main/communication0',
+         'validation/main/communication1',
+         'validation/main/memory',
+         'validation/main/ent_T',
+         'validation/main/branch0exit',
+         'validation/main/branch1exit',
+         'validation/main/branch2exit'
         ]
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, batchsize=self.batchsize, nepoch=nepochs, resume=True, reports=reports)
         trainer.run()
         
-        return trainer, model
+        return trainer, model, chain

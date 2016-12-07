@@ -128,6 +128,17 @@ class Chain(chainer.Chain):
             else:
                 reporter.report({'accuracy': 0.0}, self)
 
+            if self.ent_Ts is not None:
+                #print("self.ent_Ts",self.ent_Ts)
+                reporter.report({'ent_T':self.ent_Ts[0]}, self)
+                
+            if hasattr(self.sequence,'get_communication_costs'):
+                c = self.sequence.get_communication_costs()
+                reporter.report({'communication0':c[0]}, self)
+                reporter.report({'communication1':c[1]}, self)
+            if hasattr(self.sequence,'get_device_memory_cost'):
+                reporter.report({'memory': self.sequence.get_device_memory_cost()}, self)
+
         return self.loss
     
     def __call__(self, *args):

@@ -3,6 +3,8 @@ from pprint import pprint as pp
 from deepopt.deepopt import DeepOptEpoch
 from deepopt.chooser import get_max_epoch
 from .family.simple import SimpleHybridFamily
+from chainer.training import extensions
+import chainer
 
 class Collection(object):
     def __init__(self, name, path="_models", input_dims=1, nepochs=10, verbose=False):
@@ -59,14 +61,27 @@ class Collection(object):
             if self.verbose:
                 print('Bootstrap: {}'.format(point))
 
-            trainer, model = self.family.train_model(self.trainset, self.testset, **point)
-            meta_reports = getattr(self.family, 'meta_reports', [])
-            metas = {}
-            for meta in meta_reports:
-                metas[meta] = trainer.get_log_result(meta)
-            main_report = getattr(self.family, 'main_report', "validation/main/accuracy")
+            trainer, model, chain = self.family.train_model(self.trainset, self.testset, **point)
             
-            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result(main_report), metas=metas, **point)
+            # re-evaluate the result, TODO: reeval from previous epoch as well
+            result = trainer.evaluate()
+            meta = {}
+            for k,v in result.iteritems():
+                if hasattr(v,'tolist'):
+                    v = v.tolist()
+                meta['validation/'+k] = v
+            meta['validation/numtrain'] = len(self.trainset)
+            meta['validation/numtest'] = len(self.testset)
+            main_report = getattr(self.family, 'main_report', "validation/main/accuracy")
+            do.add_point(point['nepochs'], meta[main_report], meta=meta, **point)
+                
+            #meta_reports = getattr(self.family, 'meta_reports', [])
+            #metas = {}
+            #for meta in meta_reports:
+            #    metas[meta] = trainer.get_log_result(meta)
+            #    print(meta,metas[meta][-1])
+            #main_report = getattr(self.family, 'main_report', "validation/main/accuracy")
+            #do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result(main_report), metas=metas, **point)
 
         do.fit()
 
@@ -77,13 +92,45 @@ class Collection(object):
             i += max(1, point['nepochs'] - get_max_epoch(do, point))
             trainer, model = self.family.train_model(self.trainset, self.testset, **point)
             
-            meta_reports = getattr(self.family, 'meta_reports', [])
-            metas = {}
-            for meta in meta_reports:
-                metas[meta] = trainer.get_log_result(meta)
+            result = trainer.evaluate()
+            meta = {}
+            for k,v in result.iteritems():
+                if hasattr(v,'tolist'):
+                    v = v.tolist()
+                meta['validation/'+k] = v
+            meta['validation/numtrain'] = len(self.trainset)
+            meta['validation/numtest'] = len(self.testset)
             main_report = getattr(self.family, 'main_report', "validation/main/accuracy")
+            do.add_point(point['nepochs'], meta[main_report], meta=meta, **point)
             
-            do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result(main_report), metas=metas, **point)
+            #meta_reports = getattr(self.family, 'meta_reports', [])
+            #meta_reports = [
+            # 'epoch',
+            # 'validation/main/branch0accuracy',
+            # 'validation/main/branch1accuracy',
+            # 'validation/main/branch2accuracy',
+            # 'validation/main/branch3accuracy',
+            # 'validation/main/branch4accuracy',
+            # 'validation/main/branch5accuracy',
+            # 'validation/main/branch6accuracy',
+            # 'validation/main/branch7accuracy',
+            # 'validation/main/branch8accuracy',
+            # 'validation/main/accuracy',
+            # 'validation/main/communication0',
+            # 'validation/main/communication1',
+            # 'validation/main/memory',
+            # 'validation/main/ent_T',
+            # 'validation/main/branch0exit',
+            # 'validation/main/branch1exit',
+            # 'validation/main/branch2exit'
+            #]
+            #
+            #metas = {}
+            #for meta in meta_reports:
+            #    metas[meta] = trainer.get_log_result(meta)
+            #main_report = getattr(self.family, 'main_report', "validation/main/accuracy")
+            #
+            #do.add_points(range(1, int(point['nepochs'])+1), trainer.get_log_result(main_report), metas=metas, **point)
             do.fit()
 
             if self.verbose:

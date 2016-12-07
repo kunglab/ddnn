@@ -22,6 +22,7 @@ class Trainer(object):
         self.eval_chain = eval_chain = chain.copy()
         self.chain.test = False
         self.eval_chain.test = True
+        self.testset = test
 
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -68,6 +69,7 @@ class Trainer(object):
         self.eval_chain.test = True
             
         self.trainer.run()
+        
         #ext = self.trainer.get_extension('validation')()
         #test_accuracy = ext['validation/main/accuracy']
         #test_loss = ext['validation/main/loss']
@@ -76,8 +78,24 @@ class Trainer(object):
         if self.gpu >= 0:
             self.chain.to_cpu()
         return
+        #return self.evaluate()
         #return acc,loss
 
+    def evaluate(self):
+        test_iter = chainer.iterators.SerialIterator(self.testset, 1,
+                                                     repeat=False, shuffle=False)
+        self.chain.train = False
+        self.chain.test = True
+        if self.gpu >= 0:
+            self.chain.to_gpu(self.gpu)
+        result = extensions.Evaluator(test_iter, self.chain, device=self.gpu)()
+        if self.gpu >= 0:
+            self.chain.to_cpu()
+        #for k,v in result.iteritems():
+        #    if k in ["main/numsamples", "main/accuracy", "main/branch0exit", "main/branch1exit", "main/branch2exit"]:
+        #        print k, "\t\t\t", v
+        return result
+    
     # Deprecated
     def get_result(self, key):
         # this only returns the lastest log
