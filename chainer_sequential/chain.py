@@ -18,6 +18,7 @@ class Chain(chainer.Chain):
     def __init__(self, compute_accuracy=True, lossfun=softmax_cross_entropy.softmax_cross_entropy, branchweight=1, branchweights=None, ent_T=0.1, ent_Ts=None,
                  accfun=accuracy.accuracy):
         super(Chain,self).__init__()
+        #branchweights = [1000]*7+[1000]
         self.lossfun = lossfun
         if branchweight is not None and branchweights is None:
             self.branchweights = [branchweight]
@@ -102,7 +103,7 @@ class Chain(chainer.Chain):
         if isinstance(self.y, tuple):
             self.loss = 0
             for i, y in enumerate(self.y):
-                if hasattr(t,'__len__'):
+                if isinstance(t,tuple):
                     index = min(len(t)-1,i)
                     tt = t[index]
                 else:
@@ -110,6 +111,7 @@ class Chain(chainer.Chain):
                 
                 branchweight = self.branchweights[min(i,len(self.branchweights)-1)]
                 bloss = self.lossfun(y, tt)
+                #print("branchweight",branchweight,bloss.data)
                 xp = chainer.cuda.cupy.get_array_module(bloss.data)
                 if y.creator is not None and not xp.isnan(bloss.data):
                     self.loss += branchweight*bloss
@@ -121,7 +123,11 @@ class Chain(chainer.Chain):
             reporter.report({'loss': self.loss}, self)
             if self.compute_accuracy:
                 y, exits = self.sequence.predict(*x, ent_Ts=self.ent_Ts, test=True)
-                self.accuracy = self.accfun(y, t[-1])
+                if isinstance(t,tuple):
+                    self.accuracy = self.accfun(y, t[-1])
+                else:
+                    self.accuracy = self.accfun(y, t)
+
                 reporter.report({'accuracy': self.accuracy}, self)
                 for i,exit in enumerate(exits):
                     reporter.report({'branch{}exit'.format(i): float(exit)}, self)

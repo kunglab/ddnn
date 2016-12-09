@@ -152,8 +152,8 @@ class Sequential(object):
 
     def entropy_exit(self, b, ent_T):
         xp = cuda.get_array_module(b)
-        eb = entropy(F.softmax(b))
-
+        eb = entropy(F.softmax(b))/np.log(b.shape[1])
+        eb.to_cpu()
         if hasattr(eb.data,'get'):
             with cuda.get_device(eb.data):
                 exited = eb.data < ent_T
@@ -164,8 +164,8 @@ class Sequential(object):
     
     def entropy_filter(self, x, b, ent_T):
         xp = cuda.get_array_module(b)
-        eb = entropy(F.softmax(b))
-
+        eb = entropy(F.softmax(b))/np.log(b.shape[1])
+        eb.to_cpu()        
         if hasattr(eb.data,'get'):
             with cuda.get_device(eb.data):
                 exited = eb.data < ent_T

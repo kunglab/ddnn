@@ -192,7 +192,7 @@ class MultiInputSequential(Sequential):
             ysdata = ys.data
         for j,lex in enumerate(locally_exited):
             if lex:
-                if hasattr(ys.data, 'get'):
+                if hasattr(houts[0][j].data, 'get'):
                     h = houts[0][j].data.get()
                 else:
                     h = houts[0][j].data

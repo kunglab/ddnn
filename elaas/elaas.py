@@ -70,6 +70,9 @@ class Collection(object):
                 if hasattr(v,'tolist'):
                     v = v.tolist()
                 meta['validation/'+k] = v
+            for k,v in point.iteritems():
+                 meta[k] = str(v)
+            meta['epoch'] = point['nepochs']
             meta['validation/numtrain'] = len(self.trainset)
             meta['validation/numtest'] = len(self.testset)
             main_report = getattr(self.family, 'main_report', "validation/main/accuracy")
@@ -98,6 +101,9 @@ class Collection(object):
                 if hasattr(v,'tolist'):
                     v = v.tolist()
                 meta['validation/'+k] = v
+            for k,v in point.iteritems():
+                 meta[k] = str(v)
+            meta['epoch'] = point['nepochs']
             meta['validation/numtrain'] = len(self.trainset)
             meta['validation/numtest'] = len(self.testset)
             main_report = getattr(self.family, 'main_report', "validation/main/accuracy")

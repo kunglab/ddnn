@@ -26,11 +26,11 @@ parser.add_argument('--iters', type=int, default=100)
 parser.add_argument('-e', '--epochs', type=int,  default=100)
 parser.add_argument('-b', '--bootstrap_epochs', type=int,  default=100)
 parser.add_argument('-v', '--verbose', action='store_true')
-parser.add_argument('-n', '--ncams', type=str,  default="0,1,2,3,4,5")
+parser.add_argument('-n', '--ncams', type=str,  default="0")
 args = parser.parse_args()
 
 args.ncams = [int(i) for i in args.ncams.split(",")]
-mnist = Collection('exp_threshold_{}'.format(reduce(lambda x,y: str(x)+str(y), args.ncams)), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
+mnist = Collection('binary_multiinput_increasing_mpcc_{}'.format(reduce(lambda x,y: str(x)+str(y), args.ncams)), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
 
 ncams = args.ncams
 mnist.set_model_family(MultiInputEdgeFamily,ninputs=len(ncams),batchsize=700,merge_function="max_pool_concat")
@@ -51,8 +51,8 @@ mnist.add_trainset(train)
 mnist.add_testset(test)
 
 mnist.set_searchspace(
-    nfilters_embeded_last=[1],
-    nfilters_embeded=[1,2,3],
+    nfilters_embeded_last=[16],
+    nfilters_embeded=[16],
     nlayers_embeded=[1],
     #nfilters_edge=[16],
     #nlayers_edge=[2],
@@ -60,8 +60,21 @@ mnist.set_searchspace(
     nlayers_cloud=[2],
     lr=[1e-3],
     branchweight=[1],
-    ent_T=[0.1,0.3,0.5,0.8,0.9,1]
+    ent_T=[0.8]
 )
+
+#mnist.set_searchspace(
+#    nfilters_embeded_last=[8],
+#    nfilters_embeded=[8],
+#    nlayers_embeded=[2],
+#    nfilters_edge=[16],
+#    nlayers_edge=[1],
+#    nfilters_cloud=[16],
+#    nlayers_cloud=[2],
+#    lr=[1e-3],
+#    branchweight=[1],
+#    ent_T=[0.8]
+#)
 
 # mnist.set_searchspace(
 #     nfilters_embeded=[64, 128],
