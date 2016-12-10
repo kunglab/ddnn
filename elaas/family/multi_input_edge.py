@@ -56,7 +56,7 @@ class MultiInputEdgeFamily:
         local_branch = Sequential()
         #local_branch.add(Linear(None, self.output_dims))
         #local_branch.add(BatchNormalization(self.output_dims))
-        if 'concat' == self.merge_function:
+        if self.merge_function in ['concat', 'concat_avg_pool', 'concat_max_pool']:
             local_branch.add(BinaryLinearBNSoftmax(None, self.output_dims))
         model.add_local(local_branch)
         
@@ -87,7 +87,7 @@ class MultiInputEdgeFamily:
         # Cloud branches
         for i in range(nlayers_cloud):
             if i == 0:
-                if 'concat' in self.merge_function:
+                if self.merge_function in ['concat', 'avg_pool_concat', 'max_pool_concat']:
                     nfilters = self.ninputs*nfilters_embeded_last
                 else:
                     nfilters = nfilters_embeded_last

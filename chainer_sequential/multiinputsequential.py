@@ -53,7 +53,71 @@ class MultiInputSequential(Sequential):
             layer.from_dict(input_dict)
             self.inputs.append(layer)
         super(MultiInputSequential, self).from_dict(dict)
-
+    
+    def avg_pool_max_pool(self, hs):
+        num_output = len(hs[0]) 
+        houts = []
+        i = 0
+        shape = hs[0][i].shape
+        h = F.dstack([F.reshape(h[i],(shape[0], -1)) for h in hs])
+        x = 1.0*F.sum(h,2)/h.shape[2]
+        x = F.reshape(x, shape)
+        houts.append(x)
+        
+        for i in range(1,num_output):
+            shape = hs[0][i].shape
+            h = F.dstack([F.reshape(h[i],(shape[0], -1)) for h in hs])
+            x = 1.0*F.max(h,2)
+            x = F.reshape(x, shape)
+            houts.append(x)
+        return houts
+    
+    def max_pool_avg_pool(self, hs):
+        num_output = len(hs[0]) 
+        houts = []
+        i = 0
+        shape = hs[0][i].shape
+        h = F.dstack([F.reshape(h[i],(shape[0], -1)) for h in hs])
+        x = 1.0*F.max(h,2)
+        x = F.reshape(x, shape)
+        houts.append(x)
+        
+        for i in range(1,num_output):
+            shape = hs[0][i].shape
+            h = F.dstack([F.reshape(h[i],(shape[0], -1)) for h in hs])
+            x = 1.0*F.sum(h,2)/h.shape[2]
+            x = F.reshape(x, shape)
+            houts.append(x)
+        return houts
+    
+    def concat_max_pool(self, hs):
+        num_output = len(hs[0]) 
+        houts = []
+        i = 0
+        x = F.concat([h[i] for h in hs],1)
+        houts.append(x)
+        for i in range(1,num_output):
+            shape = hs[0][i].shape
+            h = F.dstack([F.reshape(h[i],(shape[0], -1)) for h in hs])
+            x = 1.0*F.max(h,2)
+            x = F.reshape(x, shape)
+            houts.append(x)
+        return houts
+    
+    def concat_avg_pool(self, hs):
+        num_output = len(hs[0]) 
+        houts = []
+        i = 0
+        x = F.concat([h[i] for h in hs],1)
+        houts.append(x)
+        for i in range(1,num_output):
+            shape = hs[0][i].shape
+            h = F.dstack([F.reshape(h[i],(shape[0], -1)) for h in hs])
+            x = 1.0*F.sum(h,2)/h.shape[2]
+            x = F.reshape(x, shape)
+            houts.append(x)
+        return houts
+        
     def max_pool(self, hs):
         num_output = len(hs[0]) 
         houts = []
