@@ -7,4 +7,4 @@ import argparse
 from datasets import datasets
 
 #if cam is not specified, will return all cams
-train, test = datasets.get_mvmc(cam=2)
+train, test = datasets.get_mvmc()

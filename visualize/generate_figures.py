@@ -1,7 +1,7 @@
 import os
 
 import matplotlib
-matplotlib.rcParams['font.size'] = 16.0
+matplotlib.rcParams['font.size'] = 20.0
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -34,7 +34,7 @@ if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
 
-img_type = '.png'
+img_type = '.pdf'
 
 linewidth = 4
 ms = 8
@@ -59,7 +59,7 @@ plt.xticks(idxs)
 plt.xlim(0.5, 6.5)
 plt.xlabel('Number of Device(s)')
 plt.ylabel('Classification Accuracy')
-plt.legend(loc=0)
+plt.legend(loc=0, prop={'size': 16})
 plt.tight_layout()
 plt.grid()
 plt.savefig(save_dir + 'increasing' + img_type)
@@ -75,7 +75,7 @@ plt.xticks(idxs)
 plt.xlim(0.5, 6.5)
 plt.xlabel('Missing Device Index')
 plt.ylabel('Classification Accuracy')
-plt.legend(loc=0)
+plt.legend(loc=0, prop={'size': 16})
 plt.tight_layout()
 plt.grid()
 plt.savefig(save_dir + 'fault' + img_type)
@@ -92,17 +92,17 @@ for name in names:
     idxs = np.argsort(comm_df['comm'])
     ax1.plot(comm_df['comm'][idxs], comm_df[name][idxs]*100., styles[name],
              linewidth=linewidth, ms=ms, color=colors[name],
-             label=legend[name])
+             label=legend[name] + ' Acc.')
 # plt.xticks(comm_df['filters'].values)
 # plt.xlim(comm_df['filters'].values[0]-0.5, comm_df['filters'].values[-1]+0.5)
 ax2 = ax1.twinx()
-ax2.plot(comm_df['comm'][idxs], comm_df['device_size'][idxs], ':ok', linewidth=linewidth, ms=ms, label='Communication')
+ax2.plot(comm_df['comm'][idxs], comm_df['device_size'][idxs]/1000., ':ok', linewidth=linewidth, ms=ms, label='Device Memory')
 
-ax1.set_xlabel('Communication')
+ax1.set_xlabel('Communication (B)')
 ax1.set_ylabel('Classification Accuracy')
 ax1.set_ylim(80, 100)
-ax2.set_ylabel('Memory')
-ax2.set_ylim(600, 4000)
+ax2.set_ylabel('End Device Memory (KB)')
+ax2.set_ylim(0.6, 4)
 h1, l1 = ax1.get_legend_handles_labels()
 h2, l2 = ax2.get_legend_handles_labels()
 leg = ax1.legend(h1+h2, l1+l2, loc='lower right', prop={'size': 16})
@@ -115,17 +115,17 @@ plt.clf()
 
 fig, ax1 = plt.subplots(figsize=(8, 6.5))
 for name in names:
-    ax1.plot(thres_df['device_size'], thres_df[name]*100., styles[name],
+    ax1.plot(thres_df['device_size']/1000., thres_df[name]*100., styles[name],
              linewidth=linewidth, ms=ms, color=colors[name],
              label=legend[name] + ' Acc.')
 ax2 = ax1.twinx()
-ax2.plot(thres_df['device_size'], thres_df['comm'], 'o--k',
+ax2.plot(thres_df['device_size']/1000., thres_df['comm'], 'o--k',
          linewidth=linewidth, ms=ms, label='Communication')
 
-ax1.set_xlabel('End Device Memory')
+ax1.set_xlabel('End Device Memory (KB)')
 ax1.set_ylabel('Classification Accuracy')
 ax1.set_ylim(80, 100)
-ax2.set_ylabel('Communication')
+ax2.set_ylabel('Communication (B)')
 ax2.set_ylim(0, 120)
 h1, l1 = ax1.get_legend_handles_labels()
 h2, l2 = ax2.get_legend_handles_labels()
