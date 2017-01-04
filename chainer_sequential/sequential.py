@@ -10,7 +10,7 @@ import inspect
 from chainer_ext.functions import entropy
 import chainer.functions as F
 from chainer import Variable
-                
+
 class Sequential(object):
     def __init__(self, stages=[0], weight_initializer="Normal", weight_init_std=1):
         self._layers = []
@@ -161,11 +161,11 @@ class Sequential(object):
         else:
             exited = eb.data < ent_T
         return exited
-    
+
     def entropy_filter(self, x, b, ent_T):
         xp = cuda.get_array_module(b)
         eb = entropy(F.softmax(b))/np.log(b.shape[1])
-        eb.to_cpu()        
+        eb.to_cpu()
         if hasattr(eb.data,'get'):
             with cuda.get_device(eb.data):
                 exited = eb.data < ent_T
@@ -241,7 +241,7 @@ class Sequential(object):
                     ys[i] = b[j]
                     j = j + 1
                 i = i + 1
-        
+
         return F.vstack(ys), exited
 
     def set_current_stage(self, stage):
@@ -253,9 +253,13 @@ class Sequential(object):
     def get_current_stage(self):
         return self.current_stage
 
-    def __call__(self, x, test=False):
+    def __call__(self, x, test=False, output_inter=False):
         bs = []
         numlinks = len(self.links)
+
+        if output_inter:
+            interm_results = [x]
+
         for i, link in enumerate(self.links):
             if isinstance(link, Sequential):
                 # detach if in different stages
@@ -282,9 +286,16 @@ class Sequential(object):
             # do not update this branch if not the current stage
             if self.current_stage not in self._stages:
                 x.unchain_backward()
+
+            if output_inter:
+                interm_results.append(x.data)
+
         bs.append(x)
-        #print(bs)
-        return tuple(bs)
+
+        if output_inter:
+            return tuple(bs), interm_results
+        else:
+            return tuple(bs)
 
     def generate_call(self):
         link_idx = 0

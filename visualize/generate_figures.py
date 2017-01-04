@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-def align_y_axis(ax1, ax2, minresax1, minresax2):
+def align_y_axis(ax1, ax2, minresax1, minresax2, ticks):
     """ Sets tick marks of twinx axes to line up with 7 total tick marks
 
     ax1 and ax2 are matplotlib axes
@@ -14,18 +14,18 @@ def align_y_axis(ax1, ax2, minresax1, minresax2):
 
     ax1ylims = ax1.get_ybound()
     ax2ylims = ax2.get_ybound()
-    ax1factor = minresax1 * 6
-    ax2factor = minresax2 * 6
+    ax1factor = minresax1 * (ticks - 1)
+    ax2factor = minresax2 * (ticks - 1)
     ax1.set_yticks(np.linspace(ax1ylims[0],
                                ax1ylims[1]+(ax1factor -
                                (ax1ylims[1]-ax1ylims[0]) % ax1factor) %
                                ax1factor,
-                               7))
+                               ticks))
     ax2.set_yticks(np.linspace(ax2ylims[0],
                                ax2ylims[1]+(ax2factor -
                                (ax2ylims[1]-ax2ylims[0]) % ax2factor) %
                                ax2factor,
-                               7))
+                               ticks))
 
 
 data_dir = 'data/'
@@ -59,9 +59,9 @@ for name in names:
 plt.xticks(idxs)
 plt.xlim(0.5, 6.5)
 plt.title('Scaling End Devices')
-plt.xlabel('Number of End Device(s)')
+plt.xlabel('Number of End Devices')
 plt.ylabel('Classification Accuracy')
-plt.legend(loc=0, prop={'size': 16})
+plt.legend(loc=0, prop={'size': 14})
 plt.tight_layout()
 plt.grid()
 plt.savefig(save_dir + 'increasing' + img_type)
@@ -79,7 +79,7 @@ plt.xlim(0.5, 6.5)
 plt.title('DDNN Fault Tolerance')
 plt.xlabel('Device Failure')
 plt.ylabel('Classification Accuracy')
-plt.legend(loc=0, prop={'size': 16})
+plt.legend(loc=0, prop={'size': 14})
 plt.tight_layout()
 plt.grid()
 plt.savefig(save_dir + 'fault' + img_type)
@@ -99,7 +99,7 @@ for name in names:
 # plt.xlim(0.5, 6.5)
 plt.xlabel('Exit')
 plt.ylabel('Classification Accuracy')
-plt.legend(loc=0, prop={'size': 16})
+plt.legend(loc=0, prop={'size': 14})
 plt.tight_layout()
 plt.grid()
 plt.savefig(save_dir + 'local_exit' + img_type)
@@ -119,7 +119,7 @@ plt.clf()
 # plt.ylim(80, 100)
 # plt.xlim(12, 32)
 # plt.grid()
-# plt.legend(loc='lower right', prop={'size': 16})
+# plt.legend(loc='lower right', prop={'size': 14})
 # plt.tight_layout()
 # plt.savefig(save_dir + 'commvsacc' + img_type)
 # plt.clf()
@@ -139,12 +139,17 @@ ax1.set_xlim(12, 32)
 ax1.set_ylim(80, 100)
 ax2.set_ylabel('End Deivce Memory (KB)')
 ax2.set_ylim(0, 4)
+
 h1, l1 = ax1.get_legend_handles_labels()
 h2, l2 = ax2.get_legend_handles_labels()
-leg = ax1.legend(h1+h2, l1+l2, loc='lower right', prop={'size': 16})
+leg = ax1.legend(h1+h2, l1+l2, loc='lower right', prop={'size': 14})
 for l in leg.legendHandles:
     l._sizes = [6]
 
+align_y_axis(ax1, ax2, 1, 1, 6)
+ax1.grid(zorder=0)
+leg.set_zorder(102)
+# ax2.grid(None)
 plt.tight_layout()
 plt.savefig(save_dir + 'commvsacc' + img_type)
 plt.clf()
@@ -162,21 +167,25 @@ ax2.plot(ent_df['T'], ent_df['exit'], 'o--k',
          linewidth=linewidth, ms=ms, label='Local Exit (%)')
 
 ax1.set_title('Impact of Exit Threshold')
-ax1.set_xlabel('Exit Threshold')
+ax1.set_xlabel(r'Exit Threshold')
+ax1.set_yticks([75, 80, 85, 90, 95, 100, 100])
+ax2.set_yticks([0, 20, 40, 60, 80, 100])
 ax1.set_ylabel('Classification Accuracy')
-ax1.set_xlim(0.05, 1.05)
-ax1.set_ylim(80, 105)
-ax2.set_ylabel('Percent Locally Exited')
+ax1.set_xlim(0, 1.05)
+ax1.set_ylim(73.75, 101.25)
+ax2.set_ylabel('Local Exit (%)')
 ax2.set_ylim(-5, 105)
 h1, l1 = ax1.get_legend_handles_labels()
 h2, l2 = ax2.get_legend_handles_labels()
-leg = ax1.legend(h1+h2, l1+l2, loc='upper left', prop={'size': 16})
+leg = ax1.legend(h1+h2, l1+l2, loc='upper left', prop={'size': 14})
 for l in leg.legendHandles:
     l._sizes = [6]
 
-# align_y_axis(ax1, ax2, 1, 1)
-# ax1.grid()
+# align_y_axis(ax1, ax2, 1, 1, 8)
+# ax2.set_ylim(-5, 100)
+ax1.grid(zorder=0)
 # ax2.grid(None)
+leg.set_zorder(102)
 plt.tight_layout()
 plt.savefig(save_dir + 'thresholdvsacc' + img_type)
 plt.clf()
