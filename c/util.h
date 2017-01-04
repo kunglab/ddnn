@@ -192,10 +192,12 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
   int mi, i, j, f, c_shift, bin_f_len, res_w, res_h, c_idx, f_idx, a_idx;
   uint8_t res_sign, c_mask;
   float res;
+  int pw = 1;
+  int ph = 1;
 
   /* packed res_w stride */
-  res_w = (w - kw + 1 + 7) / 8;
-  res_h = h - kh + 1;
+  res_w = (w + (pw * 2) - kw + 1 + 7) / 8;
+  res_h = h + (ph * 2) - kh + 1;
   bin_f_len = (kw * kh + 7) / 8;
   c_idx = 0;
 
@@ -206,10 +208,10 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
     a_idx = idx_4d(mi, 0, 0, 0, n, w, h);
     for (f = 0; f < num_f; ++f) {
       f_idx = f * bin_f_len * n;
-      for (i = 0; i < w - kw + 1; i += sw) {
+      for (i = -pw; i < w - kw + pw + 1; i += sw) {
         c_shift = 7;
         c_mask = 0x80;
-        for (j = 0; j < h - kh + 1; j += sh) {
+        for (j = -ph; j < h - kh + ph + 1; j += sh) {
           /* compute conv and BN */
           res = fdot(A + a_idx, F + f_idx, n, i, j, w, h, kw, kh);
           res += Bias[f];
@@ -609,7 +611,12 @@ float fdot(float* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
     for (p = i; p < i + kw; ++p) {
       a_idx = idx_3d(chan, p, j, w, h);
       for (q = j; q < j + kh; ++q) {
-        a_val = A[a_idx];
+        /* for padding */
+        if (p < 0 || p >= w || q < 0 || q >= h) {
+          a_val = 0;
+        } else {
+          a_val = A[a_idx];
+        }
         f_val = (W[f_idx] & f_mask);
         res += f_val > 0 ? a_val : -a_val;
 
