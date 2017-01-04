@@ -186,9 +186,8 @@ class Sequential(object):
         if len(y_cont) > 0:
             y_cont = F.vstack(y_cont)
         return y_exit,y_cont,exited
-
-    def predict(self, x, ent_Ts=None, test=True):
-        # Return last layer result
+    
+    def predict_with_mask(self, x, ent_Ts=None, test=True):
         num = x.shape[0]
         bs = []
         exit_i = 0
@@ -243,6 +242,21 @@ class Sequential(object):
                 i = i + 1
         
         return F.vstack(ys), exited
+    
+    def predict(self, x, ent_Ts=None, test=True):
+        num = x.shape[0]
+        if ent_Ts is not None and ent_Ts[0]>=1:
+            return self(x, test=test)[0], [num]
+        
+        ys = exited = self.predict_with_mask(self, x, ent_Ts=ent_Ts, test=test)
+            
+        exits = []
+        exited = np.array(exited)
+        ex = np.sum(exited).tolist()
+        total = len(exited)
+        exits.append(ex)
+        exits.append(total-ex)        
+        return ys, exits
 
     def set_current_stage(self, stage):
         self.current_stage = stage
@@ -324,8 +338,57 @@ class Sequential(object):
         text += "}"
 
         return text
-
-    def generate_c(self, shape, name="main"):
+    # in the number of values transmitted (divide by 32 if it is in binary)
+    #def get_communication_costs(self):
+    #    if hasattr(self,'exit_size'):
+    #        return self.exit_size
+    #    else:
+    #        return [0,0]
+    
+    # in bits
+    def get_device_memory_cost(self):
+        sequence = self
+        cost = 0
+        for i, link in enumerate(sequence.links):
+            if isinstance(link, chainer.link.Link):
+                for l in link.links():
+                    if hasattr(l, 'W'):
+                        cost += np.prod(l.W.data.shape)
+                    elif hasattr(l, 'b'):
+                        cost += 32*np.prod(l.b.data.shape)
+                    elif hasattr(l, 'gamma'):
+                        cost += 32
+                    elif hasattr(l, 'beta'):
+                        cost += 32
+                    elif hasattr(l, 'avg_mean'):
+                        cost += 32
+                    elif hasattr(l, 'avg_var'):
+                        cost += 32
+            elif isinstance(link, Sequential):
+                for j, link in enumerate(link.links):
+                    if isinstance(link, chainer.link.Link):
+                        for l in link.links():
+                            if hasattr(l, 'W'):
+                                cost += np.prod(l.W.data.shape)
+                            elif hasattr(l, 'b'):
+                                cost += 32*np.prod(l.b.data.shape)
+                            elif hasattr(l, 'gamma'):
+                                cost += 32
+                            elif hasattr(l, 'beta'):
+                                cost += 32
+                            elif hasattr(l, 'avg_mean'):
+                                cost += 32
+                            elif hasattr(l, 'avg_var'):
+                                cost += 32
+                            #elif hasattr(l, 'N'):
+                            #    cost += 8*b
+        return cost
+    
+    def generate_c(self, shape, name="main", **kwargs):
+        if kwargs.get("inp"):
+            inp = ",".join([ p for p in inp.get("inp") ])
+        else:
+            inp = "0"
         text = """
 #include "util.h"
 """
@@ -354,7 +417,7 @@ float input[{input_size}] = {{{inp}}};
 uint8_t output[1] = {{0}};
 uint8_t temp1[{inter_size}] = {{0}}; // Allocate large enough
 uint8_t temp2[{inter_size}] = {{0}}; // Allocate large enough
-""".format(name=name,input_size=input_size,inter_size=inter_size,inp="0")
+""".format(name=name,input_size=input_size,inter_size=inter_size,inp=inp)
 
         text += self.generate_call()
         return text

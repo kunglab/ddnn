@@ -248,7 +248,7 @@ class MultiInputSequential(Sequential):
         ex = np.sum(locally_exited).tolist()
         exits.append(ex)
         
-        ys, exited = super(MultiInputSequential, self).predict(houts[-1], ent_Ts=ent_Ts[min(1,len(ent_Ts)-1):], test=True)
+        ys, exited = self.predict_with_mask(houts[-1], ent_Ts=ent_Ts[min(1,len(ent_Ts)-1):], test=True)
         
         if hasattr(ys.data, 'get'):
             ysdata = ys.data.get()
