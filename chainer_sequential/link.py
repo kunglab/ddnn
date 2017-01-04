@@ -4,7 +4,6 @@ import weightnorm
 import util
 
 class Link(object):
-    
     def __call__(self, x):
         raise NotImplementedError()
 

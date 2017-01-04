@@ -1,8 +1,10 @@
 from pprint import pprint as pp
+import os
 
 from deepopt.deepopt import DeepOptEpoch
 from deepopt.chooser import get_max_epoch
 from .family.simple import SimpleHybridFamily
+from chainer_sequential.binary.utils import binary_util as bu
 from chainer.training import extensions
 import chainer
 
@@ -61,7 +63,7 @@ class Collection(object):
                 print('Bootstrap: {}'.format(point))
 
             trainer, model, chain = self.family.train_model(self.trainset, self.testset, **point)
-            
+
             # re-evaluate the result, TODO: reeval from previous epoch as well
             result = trainer.evaluate()
             
@@ -84,7 +86,7 @@ class Collection(object):
             meta['validation/numtest'] = len(self.testset)
             main_report = getattr(self.family, 'main_report', "validation/main/accuracy")
             do.add_point(point['nepochs'], meta[main_report], meta=meta, **point)
-                
+
             #meta_reports = getattr(self.family, 'meta_reports', [])
             #metas = {}
             #for meta in meta_reports:
@@ -100,8 +102,8 @@ class Collection(object):
             #print(i)
             point = self.do.sample_point()
             i += max(1, point['nepochs'] - get_max_epoch(do, point))
-            trainer, model = self.family.train_model(self.trainset, self.testset, **point)
-            
+            trainer, model, chain = self.family.train_model(self.trainset, self.testset, **point)
+
             result = trainer.evaluate()
             meta = {}
             for k,v in result.iteritems():
@@ -115,7 +117,7 @@ class Collection(object):
             meta['validation/numtest'] = len(self.testset)
             main_report = getattr(self.family, 'main_report', "validation/main/accuracy")
             do.add_point(point['nepochs'], meta[main_report], meta=meta, **point)
-            
+
             #meta_reports = getattr(self.family, 'meta_reports', [])
             #meta_reports = [
             # 'epoch',
@@ -161,8 +163,40 @@ class Collection(object):
     def get_do_traces(self):
         return self.do.get_traces()
 
-    def generate_c(self, in_shape, **kwargs):
+    def generate_c_old(self, in_shape, **kwargs):
         return self.model.generate_c(in_shape, **kwargs)
+    
+    def generate_c(self, save_file, in_shape):
+        c_code = self.model.generate_c(in_shape)
+        save_dir = os.path.join(os.path.split(save_file)[:-1])[0]
+        if not os.path.exists(save_dir) and save_dir != '':
+            os.makedirs(save_dir)
+
+        with open(save_file, 'w+') as fp:
+            fp.write(c_code)
+
+    def generate_inter_results_c(self, save_file, x):
+        _, inter = self.model(x, test=True, output_inter=True)
+        res = ''
+        res += bu.np_to_floatC(inter[0][0,0], 'x_in', 'row_major') + '\n'
+
+        for i in range(len(inter[1:-1])):
+            inter_res = inter[i+1]
+            inter_res = inter_res.reshape(-1, inter_res.shape[-1])
+            res += bu.np_to_uint8C(bu.binarize_real(inter_res),
+                                   'inter' + str(i+1), 'row_major')
+            res += '\n'
+
+        res += bu.np_to_floatC(inter[-1], 'y_out', 'row_major') + '\n'
+
+        save_dir = os.path.join(os.path.split(save_file)[:-1])[0]
+        if not os.path.exists(save_dir) and save_dir != '':
+            os.makedirs(save_dir)
+
+        with open(save_file, 'w+') as fp:
+            fp.write(res)
+
+        return inter
 
     def predict(self, x):
         return self.model(x)

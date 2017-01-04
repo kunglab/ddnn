@@ -1,7 +1,5 @@
 import numpy as np
 
-np.random.seed(42)
-
 storage_ts = ['row_major', 'col_major']
 
 def binarize(W):
@@ -91,6 +89,7 @@ def np_to_floatC(xs, name, storage_t):
     '''
     if storage_t not in storage_ts:
         print('storage_t: {} invalid. Options are {}.'.format(storage_t, storage_ts))
+        return
 
     if storage_t == 'col_major':
         xs = xs.T
@@ -173,15 +172,3 @@ def np_to_packed_uint8C(xs, name, storage_t, pad='0'):
     c_str = 'uint8_t {}[{}] = {{{}}};'.format(name, len(int_buf), ','.join(map(str, int_buf)))
 
     return c_str
-
-
-
-if __name__ == '__main__':
-    a = np.random.random((8, 9))
-    a_str = np_to_floatC(a, 'a', 'row_major')
-    # a = np.random.randint(0, 2, (8, 9))
-    # a_str = np_to_uint8C(a, 'a', 'row_major')
-
-    b = np.random.randint(0, 2, (9, 6))
-    b_str = np_to_packed_uint8C(b, 'b', 'col_major')
-    # b_str = np_to_uint8C(b, 'b', 'col_major')

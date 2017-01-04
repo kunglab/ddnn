@@ -16,22 +16,22 @@ class BinaryFamily:
         self.output_dims = output_dims
 
     def get_configurable_params(self):
-        return ["nfilters_embeded", "nlayers_embeded", "nfilters_cloud", "nlayers_cloud", "lr"]
+        return ["nfilters_embeded", "nlayers_embeded", "lr"]
 
     def generate_model(self, **kwargs):
         nfilters_embeded = int(kwargs.get("nfilters_embeded", 1))
         nlayers_embeded = int(kwargs.get("nlayers_embeded", 1))
-        nfilters_cloud = int(kwargs.get("nfilters_cloud", 1))
-        nlayers_cloud = int(kwargs.get("nlayers_cloud", 1))
 
         model = Sequential()
         for i in range(nlayers_embeded):
             if i == 0:
                 nfilters = self.input_dims
-                model.add(ConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
+                # model.add(ConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
+                model.add(ConvBNBST(nfilters, nfilters_embeded, 3, 1))
             else:
                 nfilters = nfilters_embeded
-            model.add(BinaryConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
+                # model.add(BinaryConvPoolBNBST(nfilters, nfilters_embeded, 3, 1, 1, 3, 1, 1))
+                model.add(BinaryConvBNBST(nfilters, nfilters_embeded, 3, 1))
 
         model.add(BinaryLinearBNSoftmax(None, self.output_dims))
         model.build()
@@ -79,4 +79,4 @@ class BinaryFamily:
                           testset, nepoch=nepochs, resume=True)
         trainer.run()
 
-        return trainer, model
+        return trainer, model, chain

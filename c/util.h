@@ -192,10 +192,12 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
   int mi, i, j, f, c_shift, bin_f_len, res_w, res_h, c_idx, f_idx, a_idx;
   uint8_t res_sign, c_mask;
   float res;
+  int pw = 1;
+  int ph = 1;
 
   /* packed res_w stride */
-  res_w = (w - kw + 1 + 7) / 8;
-  res_h = h - kh + 1;
+  res_w = (w + (pw * 2) - kw + 1 + 7) / 8;
+  res_h = h + (ph * 2) - kh + 1;
   bin_f_len = (kw * kh + 7) / 8;
   c_idx = 0;
 
@@ -206,10 +208,10 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
     a_idx = idx_4d(mi, 0, 0, 0, n, w, h);
     for (f = 0; f < num_f; ++f) {
       f_idx = f * bin_f_len * n;
-      for (i = 0; i < w - kw + 1; i += sw) {
+      for (i = -pw; i < w - kw + pw + 1; i += sw) {
         c_shift = 7;
         c_mask = 0x80;
-        for (j = 0; j < h - kh + 1; j += sh) {
+        for (j = -ph; j < h - kh + ph + 1; j += sh) {
           /* compute conv and BN */
           res = fdot(A + a_idx, F + f_idx, n, i, j, w, h, kw, kh);
           res += Bias[f];
@@ -250,7 +252,7 @@ void fused_float_conv_pool_layer(float* A, uint8_t* F, uint8_t* C,
   //conv_w = w/sw-kw/2;
   //pool_h = conv_h/ps-ph/2;
   //pool_w = conv_w/ps-pw/2;
-  
+
   if(sh<kh){
       conv_h = (h-kh+sh)/sh;
   }else{
@@ -271,12 +273,12 @@ void fused_float_conv_pool_layer(float* A, uint8_t* F, uint8_t* C,
   }else{
       pool_w = (conv_w)/ps;
   }
-    
+
   res_w =  (pool_w + 7) / 8;
   res_h = pool_h;
   bin_f_len = (kw * kh + 7) / 8;
   c_idx = 0;
-  
+
   //printf("%d %d\n%d %d\n", conv_w, conv_h, pool_w, pool_h);
   /* printf("%d", ps); */
   /* Initalize the result matrix */
@@ -303,7 +305,7 @@ void fused_float_conv_pool_layer(float* A, uint8_t* F, uint8_t* C,
               res += Bias[f];
               //printf("PARA: %d %d %d %d \n", w, h, kw, kh);
               //printf("CONV: %d/%d %d %d %f\n", f, num_f, pi, pj, res);
-          
+
               max_res = MAX(res, max_res);
               /* printf("%d %d %f \n", pi, pj, res); */
             }
@@ -396,13 +398,13 @@ void fused_conv_pool_layer(uint8_t* A, uint8_t* F, uint8_t* C,
   float res, max_res;
   uint8_t c_mask, res_sign;
 
-    
+
   /* indexs */
   //conv_h = h/sh-kh+kh/2;
   //conv_w = w/sw-kw+kw/2;
   //pool_h = conv_h/ps-ph+ph/2;
   //pool_w = conv_w/ps-pw+pw/2;
-  
+
   if(sh<kh){
       conv_h = (h-kh+sh)/sh;
   }else{
@@ -423,12 +425,12 @@ void fused_conv_pool_layer(uint8_t* A, uint8_t* F, uint8_t* C,
   }else{
       pool_w = (conv_w)/ps;
   }
-    
+
   //conv_h = (h-2*(kh/2))/sh;
   //conv_w = (w-2*(kw/2))/sw;
   //pool_h = (conv_h-2*(ph/2))/ps;
   //pool_w = (conv_w-2*(pw/2))/ps;
-    
+
   bin_w = (w + 7) / 8;
   res_w =  (pool_w + 7) / 8;
   res_h = pool_h;
@@ -544,8 +546,8 @@ void linear_softmax_layer(uint8_t* A, uint8_t* B, uint8_t* C,
 
 /* Computes the dot product and does a rowwise max */
 void linear_BN_softmax_layer(uint8_t* A, uint8_t* B, uint8_t* C,
-                          float* Bias, float* Gamma, float* Beta,
-                          float* Mean, float* Std, int m, int n, int k)
+                             float* Bias, float* Gamma, float* Beta,
+                             float* Mean, float* Std, int m, int n, int k)
 {
   int i, row, col, ni, ki, ri, ci, max_idx, c_idx;
   float res, max_res;
@@ -579,10 +581,10 @@ void linear_BN_softmax_layer(uint8_t* A, uint8_t* B, uint8_t* C,
       res /= Std[col];
       res *= Gamma[col];
       res += Beta[col];
-      //printf("res-at: %f\n", res);
-      
+      printf("res-at: %f\n", res);
+
       /* Compare with current max */
-      
+
       if (res > max_res) {
         max_res = res;
         max_idx = col;
@@ -597,7 +599,7 @@ void linear_BN_softmax_layer(uint8_t* A, uint8_t* B, uint8_t* C,
 float fdot(float* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
            int kw, int kh)
 {
-  int p, q, chan, bin_w, a_idx, f_idx, bin_f_len;
+  int p, q, chan, a_idx, f_idx, bin_f_len;
   uint8_t f_val, f_mask;
   float res, a_val;
 
@@ -609,7 +611,12 @@ float fdot(float* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
     for (p = i; p < i + kw; ++p) {
       a_idx = idx_3d(chan, p, j, w, h);
       for (q = j; q < j + kh; ++q) {
-        a_val = A[a_idx];
+        /* for padding */
+        if (p < 0 || p >= w || q < 0 || q >= h) {
+          a_val = 0;
+        } else {
+          a_val = A[a_idx];
+        }
         f_val = (W[f_idx] & f_mask);
         res += f_val > 0 ? a_val : -a_val;
 

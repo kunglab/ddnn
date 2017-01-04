@@ -3,13 +3,13 @@ from chainer import link
 class CLink(object):
     def generate_c(self):
         raise NotImplementedError("Not implemented. This link cannot be exported as c.")
-       
+
     def param_mem(self):
         raise NotImplementedError("Not implemented. This link cannot be exported as c.")
-    
+
     def temp_mem(self):
         raise NotImplementedError("Not implemented. This link cannot be exported as c.")
-    
+
 from link_bst import BST
 from link_pool import Pool2D
 from link_batch_normalization import BatchNormalization
@@ -28,4 +28,3 @@ from link_binary_conv_BN_BST import BinaryConvBNBST
 
 from link_conv_pool_BN_BST import ConvPoolBNBST
 from link_binary_conv_pool_BN_BST import BinaryConvPoolBNBST
-
