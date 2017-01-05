@@ -20,11 +20,11 @@ void fused_float_linear_layer(float* A, uint8_t* W, uint8_t* C,
 void fused_linear_layer(uint8_t* A, uint8_t* B, uint8_t* C,
                         float* Bias, float* Gamma, float* Beta,
                         float* Mean, float* Std, int m, int n, int k);
-void fused_float_conv_layer(float* A, uint8_t* W, uint8_t* C,
+void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
                             float* Bias, float* Gamma, float* Beta,
                             float* Mean, float* Std, int m,
                             int n, int w, int h, int num_f, int kw, int kh,
-                            int sw, int sh);
+                            int sw, int sh, int pw, int ph, int flat_output);
 void fused_float_conv_pool_layer(float* A, uint8_t* F, uint8_t* C,
                                  float* Bias, float* Gamma, float* Beta,
                                  float* Mean, float* Std, int m,
@@ -34,7 +34,7 @@ void fused_conv_layer(uint8_t* A, uint8_t* F, uint8_t* C,
                       float* Bias, float* Gamma, float* Beta,
                       float* Mean, float* Std, int m,
                       int n, int w, int h, int num_f, int kw, int kh,
-                      int sw, int sh);
+                      int sw, int sh, int pw, int ph, int flat_output);
 void fused_conv_pool_layer(uint8_t* A, uint8_t* F, uint8_t* C,
                            float* Bias, float* Gamma, float* Beta,
                            float* Mean, float* Std, int m,
@@ -49,6 +49,8 @@ void linear_BN_softmax_layer(uint8_t* A, uint8_t* B, uint8_t* C,
 
 /* Convolution functions */
 float dot3(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h);
+float dot(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
+          int kw, int kh);
 float fdot(float* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
            int kw, int kh);
 
@@ -187,13 +189,11 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
                             float* Bias, float* Gamma, float* Beta,
                             float* Mean, float* Std, int m,
                             int n, int w, int h, int num_f, int kw, int kh,
-                            int sw, int sh)
+                            int sw, int sh, int pw, int ph, int flat_output)
 {
   int mi, i, j, f, c_shift, bin_f_len, res_w, res_h, c_idx, f_idx, a_idx;
   uint8_t res_sign, c_mask;
   float res;
-  int pw = 1;
-  int ph = 1;
 
   /* packed res_w stride */
   res_w = (w + (pw * 2) - kw + 1 + 7) / 8;
@@ -202,15 +202,20 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
   c_idx = 0;
 
   /* Initalize the result matrix */
-  for (mi = 0; mi < m*n*res_w*res_h; ++mi) C[mi] = 0;
+  for (mi = 0; mi < m*num_f*res_w*res_h; ++mi) C[mi] = 0;
 
+  c_shift = 7;
+  c_mask = 0x80;
   for (mi = 0; mi < m; ++mi) {
     a_idx = idx_4d(mi, 0, 0, 0, n, w, h);
     for (f = 0; f < num_f; ++f) {
       f_idx = f * bin_f_len * n;
       for (i = -pw; i < w - kw + pw + 1; i += sw) {
-        c_shift = 7;
-        c_mask = 0x80;
+        if (!flat_output) {
+          c_shift = 7;
+          c_mask = 0x80;
+        }
+
         for (j = -ph; j < h - kh + ph + 1; j += sh) {
           /* compute conv and BN */
           res = fdot(A + a_idx, F + f_idx, n, i, j, w, h, kw, kh);
@@ -229,7 +234,7 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
         }
 
         /* aligns rows on byte */
-        if (c_mask != 0x80) c_idx++;
+        if (!flat_output && c_mask != 0x80) c_idx++;
       }
     }
   }
@@ -282,7 +287,7 @@ void fused_float_conv_pool_layer(float* A, uint8_t* F, uint8_t* C,
   //printf("%d %d\n%d %d\n", conv_w, conv_h, pool_w, pool_h);
   /* printf("%d", ps); */
   /* Initalize the result matrix */
-  for (mi = 0; mi < m*n*res_w*res_h; ++mi) C[mi] = 0;
+  for (mi = 0; mi < m*num_f*res_w*res_h; ++mi) C[mi] = 0;
 
   for (mi = 0; mi < m; ++mi) {
     a_idx = idx_4d(mi, 0, 0, 0, n, w, h);
@@ -339,7 +344,7 @@ void fused_conv_layer(uint8_t* A, uint8_t* F, uint8_t* C,
                       float* Bias, float* Gamma, float* Beta,
                       float* Mean, float* Std, int m,
                       int n, int w, int h, int num_f, int kw, int kh,
-                      int sw, int sh)
+                      int sw, int sh, int pw, int ph, int flat_output)
 {
   int mi, i, j, f, bin_f_len, bin_w, res_w, res_h, c_idx, f_idx, a_idx, c_shift;
   float res;
@@ -347,24 +352,27 @@ void fused_conv_layer(uint8_t* A, uint8_t* F, uint8_t* C,
 
   /* packed res_w stride */
   bin_w = (w + 7) / 8;
-  res_w = (w - kw + 1 + 7) / 8;
-  res_h = h - kh + 1;
+  res_w = (w + (pw * 2) - kw + 1 + 7) / 8;
+  res_h = h + (ph * 2) - kh + 1;
   bin_f_len = (kw * kh + 7) / 8;
 
   /* Initalize the result matrix */
-  for (mi = 0; mi < m*n*res_w*res_h; ++mi) C[mi] = 0;
+  for (mi = 0; mi < m*num_f*res_w*res_h; ++mi) C[mi] = 0;
 
   c_idx = 0;
   for (mi = 0; mi < m; ++mi) {
     a_idx = idx_4d(mi, 0, 0, 0, n, h, bin_w);
     for (f = 0; f < num_f; ++f) {
       f_idx = f * bin_f_len * n;
-      for (i = 0; i < w - kw + 1; i += sw) {
-        c_shift = 7;
-        c_mask = 0x80;
-        for (j = 0; j < h - kh + 1; j += sh) {
+      for (i = -pw; i < w - kw + 1; i += sw) {
+        if (!flat_output) {
+          c_shift = 7;
+          c_mask = 0x80;
+        }
+
+        for (j = -ph; j < h - kh + 1; j += sh) {
           /* compute conv and BN */
-          res = dot3(A + a_idx, F + f_idx, n, i, j, w, h);
+          res = dot(A + a_idx, F + f_idx, n, i, j, w, h, kw, kh);
           res += Bias[f];
           res = BN(res, Gamma[f], Beta[f], Mean[f], Std[f]);
           res_sign = res > 0 ? 1 : 0;
@@ -380,7 +388,7 @@ void fused_conv_layer(uint8_t* A, uint8_t* F, uint8_t* C,
         }
 
         /* aligns rows on byte */
-        if (c_mask != 0x80) c_idx++;
+        if (!flat_output && c_mask != 0x80) c_idx++;
       }
     }
   }
@@ -439,7 +447,7 @@ void fused_conv_pool_layer(uint8_t* A, uint8_t* F, uint8_t* C,
   /* printf("%d %d\n%d %d\n%d %d\n", w, h, conv_w, conv_h, pool_w, pool_h); */
 
   /* Initalize the result matrix */
-  for (mi = 0; mi < m*n*res_w*res_h; ++mi) C[mi] = 0;
+  for (mi = 0; mi < m*num_f*res_w*res_h; ++mi) C[mi] = 0;
 
   c_idx = 0;
   for (mi = 0; mi < m; ++mi) {
@@ -574,8 +582,9 @@ void linear_BN_softmax_layer(uint8_t* A, uint8_t* B, uint8_t* C,
 
       /* needed after popcount */
       res = res*2 - n;
+
       res += Bias[col];
-      //printf("res-bf: %f\n", res);
+
       /* Batch Norm */
       res -= Mean[col];
       res /= Std[col];
@@ -584,7 +593,6 @@ void linear_BN_softmax_layer(uint8_t* A, uint8_t* B, uint8_t* C,
       printf("res-at: %f\n", res);
 
       /* Compare with current max */
-
       if (res > max_res) {
         max_res = res;
         max_idx = col;
@@ -612,11 +620,12 @@ float fdot(float* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
       a_idx = idx_3d(chan, p, j, w, h);
       for (q = j; q < j + kh; ++q) {
         /* for padding */
-        if (p < 0 || p >= w || q < 0 || q >= h) {
+        if (p < 0 || p > w - kw || q < 0 || q > h - kh) {
           a_val = 0;
         } else {
           a_val = A[a_idx];
         }
+
         f_val = (W[f_idx] & f_mask);
         res += f_val > 0 ? a_val : -a_val;
 
@@ -631,6 +640,42 @@ float fdot(float* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
   return res;
 }
 
+float dot(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
+          int kw, int kh)
+{
+  int p, q, bin_w, chan, a_idx, f_idx, bin_f_len;
+  uint8_t f_val, f_mask, a_val;
+  float res;
+
+  bin_w = (w + 7) / 8;
+  bin_f_len = (kw * kh + 7) / 8;
+  res = 0;
+  for (chan = 0; chan < num_chan; ++chan) {
+    f_idx = chan * bin_f_len;
+    f_mask = 0x80;
+    for (p = i; p < i + kw; ++p) {
+      for (q = j; q < j + kh; ++q) {
+        a_idx = idx_3d(chan, p, q, h, bin_w);
+        /* for padding */
+        if (p < 0 || p > w - kw || q < 0 || q > h - kh) {
+          a_val = 0;
+        } else {
+          a_val = nthbitset(A[a_idx], a_idx%8);
+        }
+
+        f_val = (W[f_idx] & f_mask);
+        res += f_val == a_val ? 1 : 0;
+
+        /* update matrix positions */
+        a_idx++;
+        f_mask = (f_mask >> 1 | f_mask << 7);
+        f_idx += (f_mask & 0x80) >> 7;
+      }
+    }
+  }
+
+  return res;
+}
 
 float dot3(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h)
 {

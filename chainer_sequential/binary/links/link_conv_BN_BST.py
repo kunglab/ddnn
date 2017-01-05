@@ -11,13 +11,14 @@ from ..links import BST
 from ..utils import binary_util as bu
 
 class ConvBNBST(chainer.Chain, CLink):
-    def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0):
+    def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0, flat_output=False):
         super(ConvBNBST, self).__init__(
             bconv=BinaryConvolution2D(in_channels, out_channels, ksize=ksize, stride=stride, pad=pad),
             bn=BatchNormalization(out_channels),
             bst=BST()
         )
         self.cname = "l_conv_bn_bst"
+        self.flat_output = flat_output
 
     def __call__(self, h, test=False):
         #self.inp_shape = h.data.shape
@@ -33,6 +34,11 @@ class ConvBNBST(chainer.Chain, CLink):
         text = []
         m = 1
         sw, sh = self.bconv.stride
+        pw, ph = self.bconv.pad
+        if self.flat_output:
+            fo = 1
+        else:
+            fo = 0
 
         # Bconv
         l = self.bconv
@@ -66,8 +72,8 @@ class ConvBNBST(chainer.Chain, CLink):
 
         text = "\n".join(text)+'\n'
         ftext = "void {name}(float* input, uint8_t* output){{\n"
-        ftext += "  fused_float_conv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {n}, {w}, {h}, {num_f}, {kw}, {kh}, {sw}, {sh});\n}}\n\n"
-        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw, kh=kh, sw=sw, sh=sh)
+        ftext += "  fused_float_conv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {n}, {w}, {h}, {num_f}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {flat_output});\n}}\n\n"
+        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw, kh=kh, sw=sw, sh=sh, pw=pw, ph=ph, flat_output=fo)
         text += ftext
 
         return text

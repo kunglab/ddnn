@@ -22,26 +22,27 @@ parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('--gen_inter', action='store_true')
 args = parser.parse_args()
 
+#Setup model type (e.g. Binary)
 trainer = Collection('binary', args.save_dir, nepochs=args.epochs, verbose=args.verbose)
 trainer.set_model_family(BinaryFamily)
 
+#Dataset
 train, test = chainer.datasets.get_mnist(ndim=3)
 data_shape = train._datasets[0].shape[1:]
 trainer.add_trainset(train)
 trainer.add_testset(test)
 
+#Model parameters
 trainer.set_searchspace(
     nfilters_embeded=[2],
     nlayers_embeded=[1],
     lr=[1e-3]
 )
 
+#Train model
 trainer.train(niters=args.iters, bootstrap_nepochs=args.bootstrap_epochs)
 
-# generate c
+# generate eBNN C library
 trainer.generate_c(args.c_file, data_shape)
 if args.gen_inter:
     inter = trainer.generate_inter_results_c(args.inter_file, train._datasets[0][:1])
-
-# generate container
-# trainer.generate_container()

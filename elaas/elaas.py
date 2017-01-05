@@ -172,7 +172,8 @@ class Collection(object):
 
         for i in range(len(inter[1:-1])):
             inter_res = inter[i+1]
-            inter_res = inter_res.reshape(-1, inter_res.shape[-1])
+            # inter_res = inter_res.reshape(-1, inter_res.shape[-1])
+            inter_res = inter_res.reshape(1, -1)
             res += bu.np_to_uint8C(bu.binarize_real(inter_res),
                                    'inter' + str(i+1), 'row_major')
             res += '\n'

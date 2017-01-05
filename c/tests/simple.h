@@ -1,5 +1,5 @@
 
-#include "util.h"
+#include "../util.h"
 uint8_t l_conv_bn_bst0_bconv_W[4] = {84,127,207,127};
 float l_conv_bn_bst0_bconv_b[2] = {0.010181473,0.0069620875};
 float l_conv_bn_bst0_bn_gamma[2] = {0.99622828,1.0009493};
@@ -7,7 +7,7 @@ float l_conv_bn_bst0_bn_beta[2] = {0.094135918,-0.055339132};
 float l_conv_bn_bst0_bn_mean[2] = {-0.38179475,0.39702597};
 float l_conv_bn_bst0_bn_std[2] = {0.79487574,0.87844265};
 void l_conv_bn_bst0(float* input, uint8_t* output){
-  fused_float_conv_layer(input, l_conv_bn_bst0_bconv_W, output, l_conv_bn_bst0_bconv_b, l_conv_bn_bst0_bn_gamma, l_conv_bn_bst0_bn_beta, l_conv_bn_bst0_bn_mean, l_conv_bn_bst0_bn_std, 1, 1, 28, 28, 2, 3, 3, 1, 1);
+  fused_float_conv_layer(input, l_conv_bn_bst0_bconv_W, output, l_conv_bn_bst0_bconv_b, l_conv_bn_bst0_bn_gamma, l_conv_bn_bst0_bn_beta, l_conv_bn_bst0_bn_mean, l_conv_bn_bst0_bn_std, 1, 1, 28, 28, 2, 3, 3, 1, 1, 1, 1, 1);
 }
 
 float l_b_linear_bn_softmax1_bl_b[10] = {0.0013735839,0.0016270233,-0.00017156884,7.4238247e-05,0.0023019118,0.00069262355,0.00039542839,7.5519929e-05,0.00071128411,0.00083916006};

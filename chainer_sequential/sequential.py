@@ -341,7 +341,6 @@ class Sequential(object):
 #include "util.h"
 """
         h = np.random.random([1]+list(shape)).astype(np.float32)
-        #inp = ",".join([str(item) for item in h.flatten().tolist()])
 
         input_size = h.size
         inter_sizes = []
@@ -351,12 +350,12 @@ class Sequential(object):
                     if hasattr(link, 'generate_c'):
                         inter_sizes.append(link.temp_mem(h.shape))
                         text += link.generate_c(i+j, h.shape)
-                    h = link(h)
+                    h = link(h, test=True)
                 break
             if hasattr(link, 'generate_c'):
                 inter_sizes.append(link.temp_mem(h.shape))
                 text += link.generate_c(i, h.shape)
-            h = link(h)
+            h = link(h, test=True)
         inter_size = int(np.max(inter_sizes))
 
         text += """
