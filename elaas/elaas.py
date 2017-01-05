@@ -9,12 +9,11 @@ from chainer.training import extensions
 import chainer
 
 class Collection(object):
-    def __init__(self, name, path="_models", input_dims=1, nepochs=10, verbose=False):
+    def __init__(self, name, path="_models", nepochs=10, verbose=False):
         self.name = name
         self.path = path
         self.folder = '{}/{}'.format(self.path,name)
         self.verbose = verbose
-        self.input_dims = input_dims
 
         self.searchspace = None
         self.set_model_family(SimpleHybridFamily)
@@ -36,7 +35,7 @@ class Collection(object):
         self.do.set_chooser(chooser)
 
     def set_model_family(self, family, **kwargs):
-        self.family = family(folder=self.folder, input_dims=self.input_dims, **kwargs)
+        self.family = family(folder=self.folder, **kwargs)
 
     def set_searchspace(self, **searchspace):
         self.searchspace = searchspace
@@ -67,6 +66,14 @@ class Collection(object):
 
             # re-evaluate the result, TODO: reeval from previous epoch as well
             result = trainer.evaluate()
+            
+            if result.get('main/branch0exit') is not None and point.get("target_branch0exit") is not None:
+                while result['main/branch0exit'] < point["target_branch0exit"]:
+                    print("trying at exit %", result['main/branch0exit'], chain.ent_Ts[0])
+                    chain.ent_Ts[0]+=0.01
+                    result = trainer.evaluate()
+                    result['ent_T'] = chain.ent_Ts[0]
+                
             meta = {}
             for k,v in result.iteritems():
                 if hasattr(v,'tolist'):
@@ -156,6 +163,9 @@ class Collection(object):
     def get_do_traces(self):
         return self.do.get_traces()
 
+    def generate_c_old(self, in_shape, **kwargs):
+        return self.model.generate_c(in_shape, **kwargs)
+    
     def generate_c(self, save_file, in_shape):
         c_code = self.model.generate_c(in_shape)
         save_dir = os.path.join(os.path.split(save_file)[:-1])[0]
@@ -188,7 +198,6 @@ class Collection(object):
             fp.write(res)
 
         return inter
-
 
     def predict(self, x):
         return self.model(x)

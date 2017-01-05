@@ -30,7 +30,7 @@ parser.add_argument('-n', '--ncams', type=str,  default="0,1,2,3,4,5")
 args = parser.parse_args()
 
 args.ncams = [int(i) for i in args.ncams.split(",")]
-mnist = Collection('binary_multiinput_weights_mpcc_{}'.format(args.ncams[-1]), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
+mnist = Collection('exp_mem_percent_{}'.format(reduce(lambda x,y: str(x)+str(y), args.ncams)), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
 
 ncams = args.ncams
 mnist.set_model_family(MultiInputEdgeFamily,ninputs=len(ncams),batchsize=700,merge_function="max_pool_concat")
@@ -51,16 +51,17 @@ mnist.add_trainset(train)
 mnist.add_testset(test)
 
 mnist.set_searchspace(
-    nfilters_embeded_last=[4],
-    nfilters_embeded=[4],
-    nlayers_embeded=[1],
+    target_branch0exit=[0.60],
+    nfilters_embeded_last=[2],
+    nfilters_embeded=[1,2,4,8],
+    nlayers_embeded=[2],
     #nfilters_edge=[16],
     #nlayers_edge=[2],
     nfilters_cloud=[16],
     nlayers_cloud=[2],
     lr=[1e-3],
     branchweight=[1],
-    ent_T=[0.8]
+    ent_T=[0.85]
 )
 
 # mnist.set_searchspace(
