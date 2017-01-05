@@ -38,7 +38,6 @@ static char* test_l2() {
 }
 
 
-
 static char* all_tests() {
   mu_run_test(test_l1);
   mu_run_test(test_l2);
@@ -55,8 +54,5 @@ int main () {
   }
   printf("Tests run: %d\n", tests_run);
 
-
-  compute();
-  printf("%d\n", output[0]);
   return 0;
 }

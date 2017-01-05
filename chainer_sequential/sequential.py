@@ -186,7 +186,7 @@ class Sequential(object):
         if len(y_cont) > 0:
             y_cont = F.vstack(y_cont)
         return y_exit,y_cont,exited
-    
+
     def predict_with_mask(self, x, ent_Ts=None, test=True):
         num = x.shape[0]
         bs = []
@@ -242,20 +242,20 @@ class Sequential(object):
                 i = i + 1
 
         return F.vstack(ys), exited
-    
+
     def predict(self, x, ent_Ts=None, test=True):
         num = x.shape[0]
         if ent_Ts is not None and ent_Ts[0]>=1:
             return self(x, test=test)[0], [num]
-        
+
         ys = exited = self.predict_with_mask(self, x, ent_Ts=ent_Ts, test=test)
-            
+
         exits = []
         exited = np.array(exited)
         ex = np.sum(exited).tolist()
         total = len(exited)
         exits.append(ex)
-        exits.append(total-ex)        
+        exits.append(total-ex)
         return ys, exits
 
     def set_current_stage(self, stage):
@@ -355,7 +355,7 @@ class Sequential(object):
     #        return self.exit_size
     #    else:
     #        return [0,0]
-    
+
     # in bits
     def get_device_memory_cost(self):
         sequence = self
@@ -394,7 +394,7 @@ class Sequential(object):
                             #elif hasattr(l, 'N'):
                             #    cost += 8*b
         return cost
-    
+
     def generate_c(self, shape, name="main", **kwargs):
         if kwargs.get("inp"):
             inp = ",".join([ p for p in inp.get("inp") ])

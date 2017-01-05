@@ -14,7 +14,7 @@ import deepopt.chooser
 parser = argparse.ArgumentParser(description='Training Simple eBNN model')
 parser.add_argument('-s', '--save_dir', default='_models')
 parser.add_argument('-c', '--c_file', default=os.path.join('c', 'simple.h'))
-parser.add_argument('--inter_file', default=os.path.join('c', 'inter.h'))
+parser.add_argument('--inter_file', default=os.path.join('c', 'inter_simple.h'))
 parser.add_argument('-i', '--iters', type=int, default=10)
 parser.add_argument('-e', '--epochs', type=int,  default=20)
 parser.add_argument('-b', '--bootstrap_epochs', type=int,  default=2)
