@@ -60,6 +60,7 @@ uint32_t rotr1 (uint32_t x);
 int popcnt(uint32_t v);
 int popcnt8(uint8_t v);
 int nthbitset(uint8_t num, int bit);
+int nthbitset_arr(uint8_t *num, int bit);
 void printbits(uint8_t v, int n);
 void print_binary_mat(uint8_t *a, int M, int N, int row_major);
 void print_float_mat(float *a, int M, int N);
@@ -226,7 +227,7 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
           /* store result */
           C[c_idx] |= res_sign << c_shift;
 
-          /* update idx */
+          /* update c_idx */
           c_mask = rotr1(c_mask);
           c_idx += (c_mask & 0x80) >> 7;
           c_shift--;
@@ -743,6 +744,13 @@ uint32_t rotr1 (uint32_t x)
 int nthbitset(uint8_t x, int n)
 {
   return x & (1 << n) ? 1 : 0;
+}
+
+int nthbitset_arr(uint8_t *arr, int n)
+{
+  uint8_t x = arr[n/8];
+
+  return x & (1 << (7-(n%8))) ? 1 : 0;
 }
 
 int popcnt(uint32_t v) {
