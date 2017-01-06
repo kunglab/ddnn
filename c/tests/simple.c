@@ -31,8 +31,8 @@ static char* test_l2() {
                           l_b_linear_bn_softmax1_bn_beta, l_b_linear_bn_softmax1_bn_mean,
                           l_b_linear_bn_softmax1_bn_std, 1, 1568, 10);
 
-  sprintf(output_buf, output_msg, output[0], 5);
-  mu_assert(output_buf,  output[0] == 5);
+  sprintf(output_buf, output_msg, output[0], 3);
+  mu_assert(output_buf,  output[0] == 3);
 
   return 0;
 }

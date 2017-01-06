@@ -6,12 +6,16 @@
 #include <limits.h>
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
+#define MAX_FLT_SIZE 12
 
 
 /* indexing functions */
 int idx_2d(int i, int j, int rows);
 int idx_3d(int i, int j, int k, int rows, int cols);
 int idx_4d(int i, int j, int k, int l, int rows, int cols, int depth);
+
+void slice_2d(uint8_t* dst, uint8_t* src, int x, int y,
+              int w, int h, int kw, int kh);
 
 /* layer types */
 void fused_float_linear_layer(float* A, uint8_t* W, uint8_t* C,
@@ -49,8 +53,11 @@ void linear_BN_softmax_layer(uint8_t* A, uint8_t* B, uint8_t* C,
 
 /* Convolution functions */
 float dot3(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h);
-float dot(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
-          int kw, int kh);
+float bconv(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
+           int kw, int kh);
+int bdot(uint8_t* A, uint8_t* B, int N);
+int bdot_3d(uint8_t* A, uint8_t* B, int x, int y, int w, int h, int d,
+            int kw, int kh);
 float fdot(float* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
            int kw, int kh);
 
@@ -80,6 +87,39 @@ int idx_3d(int i, int j, int k, int rows, int cols)
 int idx_4d(int i, int j, int k, int l, int rows, int cols, int depth)
 {
   return i * rows * cols * depth + j * cols * depth + k * depth + l;
+}
+
+
+void slice_2d(uint8_t* dst, uint8_t* src, int x, int y,
+              int w, int h, int kw, int kh)
+{
+  int i, j, idx, shift;
+  uint8_t mask, bitset;
+
+  /* initialize dest */
+  for (i = 0; i < kw*kh; ++i) {
+    dst[i] = 0;
+  }
+
+  idx = 0;
+  shift = 7;
+  for (i = x; i < x + kw; ++i) {
+    for (j = y; j < y + kh; ++j) {
+      if (i < 0 || i > h-1 || j < 0 || j > w-1) {
+        bitset = 0;
+      }
+      else {
+        bitset = nthbitset_arr(src, idx_2d(i, j, w));
+      }
+
+      dst[idx/8] |= bitset << shift;
+
+      mask = rotr1(mask);
+      idx++;
+      shift--;
+      shift = shift < 0 ? 7 : shift;
+    }
+  }
 }
 
 /* Layers */
@@ -373,7 +413,7 @@ void fused_conv_layer(uint8_t* A, uint8_t* F, uint8_t* C,
 
         for (j = -ph; j < h - kh + 1; j += sh) {
           /* compute conv and BN */
-          res = dot(A + a_idx, F + f_idx, n, i, j, w, h, kw, kh);
+          res = bconv(A + a_idx, F + f_idx, n, i, j, w, h, kw, kh);
           res += Bias[f];
           res = BN(res, Gamma[f], Beta[f], Mean[f], Std[f]);
           res_sign = res > 0 ? 1 : 0;
@@ -641,7 +681,7 @@ float fdot(float* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
   return res;
 }
 
-float dot(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
+float bconv(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
           int kw, int kh)
 {
   int p, q, bin_w, chan, a_idx, f_idx, bin_f_len;
@@ -661,7 +701,7 @@ float dot(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
         if (p < 0 || p > w - kw || q < 0 || q > h - kh) {
           a_val = 0;
         } else {
-          a_val = nthbitset(A[a_idx], a_idx%8);
+          a_val = nthbitset_arr(A, a_idx);
         }
 
         f_val = (W[f_idx] & f_mask);
@@ -672,6 +712,44 @@ float dot(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h,
         f_mask = (f_mask >> 1 | f_mask << 7);
         f_idx += (f_mask & 0x80) >> 7;
       }
+    }
+  }
+
+  return res;
+}
+
+int bdot(uint8_t* A, uint8_t* B, int N)
+{
+  int i, num_bytes, res;
+  num_bytes = (N/8) + 1;
+  res = 0;
+  for (i = 0; i < num_bytes; ++i) {
+    res += popcnt8(~(A[i]^B[i]));
+  }
+  res = res*2 - N;
+  return res;
+}
+
+/* Handles up to 10x10 filters */
+int bdot_3d(uint8_t* A, uint8_t* B, int x, int y, int w, int h, int d,
+            int kw, int kh)
+{
+  uint8_t tmp_slice[MAX_FLT_SIZE] = {0};
+  uint8_t *A_slice, *B_slice;
+  int i, j, res, N, N_bytes, A_bytes, B_bytes;
+
+  N = kw*kh;
+  A_bytes = (w*h)/8 + 1;
+  B_bytes = (kw*kh)/8 + 1;
+  N_bytes = N/8 + 1;
+  res = 0;
+  for (i = 0; i < d; ++i) {
+    A_slice = A + A_bytes*i;
+    B_slice = B + B_bytes*i;
+    slice_2d(tmp_slice, A_slice, x, y, w, h, kw, kh);
+    res += bdot(tmp_slice, B_slice, N);
+    for (j = 0; j < N_bytes; ++j) {
+      tmp_slice[j] = 0;
     }
   }
 
@@ -749,7 +827,6 @@ int nthbitset(uint8_t x, int n)
 int nthbitset_arr(uint8_t *arr, int n)
 {
   uint8_t x = arr[n/8];
-
   return x & (1 << (7-(n%8))) ? 1 : 0;
 }
 
