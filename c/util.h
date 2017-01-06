@@ -555,7 +555,6 @@ float BN(float f, float Gamma, float Beta, float Mean, float Std)
   f /= Std;
   f *= Gamma;
   f += Beta;
-
   return f;
 }
 
@@ -775,7 +774,6 @@ int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
   uint8_t c_mask, res_sign;
   int i, j, c_shift, c_idx, res_size;
   float res;
-
 
   c_shift = 7 - (c_start_idx % 8);
   c_mask = 0 | (1 << c_shift);
