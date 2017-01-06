@@ -29,6 +29,10 @@ void fused_float_conv_layer(float* A, uint8_t* F, uint8_t* C,
                             float* Mean, float* Std, int m,
                             int n, int w, int h, int num_f, int kw, int kh,
                             int sw, int sh, int pw, int ph, int flat_output);
+void fconv_layer(float* A, uint8_t* F, uint8_t* C, float* Bias, float* Gamma,
+                 float* Beta, float* Mean, float* Std, int m, int num_f,
+                 int w, int h, int d, int kw, int kh, int sw, int sh,
+                 int pw, int ph);
 void fused_float_conv_pool_layer(float* A, uint8_t* F, uint8_t* C,
                                  float* Bias, float* Gamma, float* Beta,
                                  float* Mean, float* Std, int m,
@@ -60,6 +64,10 @@ int bdot_3d(uint8_t* A, uint8_t* B, int x, int y, int w, int h, int d,
             int kw, int kh);
 float fdot_3d(float* A, uint8_t* B, int x, int y, int w, int h, int d,
             int kw, int kh);
+int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
+          float Gamma, float Beta, float Mean, float Std,
+          int w, int h, int d, int kw, int kh, int sw, int sh,
+          int pw, int ph);
 
 /* Bit functions */
 uint8_t rotr8 (uint8_t n, unsigned int c);
@@ -724,21 +732,18 @@ int bdot_3d(uint8_t* A, uint8_t* B, int x, int y, int w, int h, int d,
   return res;
 }
 
-/* Handles up to 5x5 filters */
 float fdot_3d(float* A, uint8_t* B, int x, int y, int w, int h, int d,
               int kw, int kh)
 {
-  uint8_t *B_slice, bitset;
-  int i, j, k, b_idx, A_bytes, B_bytes;
+  uint8_t  bitset;
+  int i, j, k, b_idx, A_bytes;
   float *A_slice, a, res;
 
   A_bytes = w*h;
-  B_bytes = (kw*kh)/8 + 1;
   res = 0;
+  b_idx = 0;
   for (i = 0; i < d; ++i) {
     A_slice = A + A_bytes*i;
-    B_slice = B + B_bytes*i;
-    b_idx = 0;
     for (j = x; j < x + kw; ++j) {
       for (k = y; k < y + kh; ++k) {
         /* handles padding */
@@ -749,7 +754,7 @@ float fdot_3d(float* A, uint8_t* B, int x, int y, int w, int h, int d,
           a = A_slice[idx_2d(j, k, w)];
         }
 
-        bitset = nthbitset_arr(B_slice, b_idx);
+        bitset = nthbitset_arr(B, b_idx);
         res += bitset ? a : -a;
         b_idx++;
       }
@@ -758,6 +763,66 @@ float fdot_3d(float* A, uint8_t* B, int x, int y, int w, int h, int d,
 
   return res;
 }
+
+/* float convolution + BN */
+/* C_start_idx is the starting index for storing the result */
+/* The result is the output size (eventually will change to precompute) */
+int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
+           float Gamma, float Beta, float Mean, float Std,
+           int w, int h, int d, int kw, int kh, int sw, int sh,
+           int pw, int ph)
+{
+  uint8_t c_mask, res_sign;
+  int i, j, c_shift, c_idx, res_size;
+  float res;
+
+
+  c_shift = 7 - (c_start_idx % 8);
+  c_mask = 0 | (1 << c_shift);
+  c_idx = c_start_idx / 8;
+  res_size = 0;
+  for (i = -pw; i < w - kw + pw + 1; i += sw) {
+    for (j = -ph; j < h - kh + ph + 1; j += sh) {
+      res = fdot_3d(A, F, i, j, w, h, d, kw, kh);
+      res += Bias;
+      res = BN(res, Gamma, Beta, Mean, Std);
+      res_sign = res > 0 ? 1 : 0;
+
+      /* store result */
+      C[c_idx] |= res_sign << c_shift;
+
+      /* update c_idx */
+      c_mask = rotr1(c_mask);
+      c_idx += (c_mask & 0x80) >> 7;
+      c_shift--;
+      c_shift =  c_shift < 0 ? 7 : c_shift;
+      res_size++;
+    }
+  }
+
+  return res_size;
+}
+
+
+void fconv_layer(float* A, uint8_t* F, uint8_t* C, float* Bias, float* Gamma,
+                 float* Beta, float* Mean, float* Std, int m, int num_f,
+                 int w, int h, int d, int kw, int kh, int sw, int sh,
+                 int pw, int ph)
+{
+  int i, j, res_size, c_idx, a_idx, f_idx;
+
+  c_idx = 0;
+  for (i = 0; i < m; ++i) {
+    for (j = 0; j < num_f; ++j) {
+      a_idx = i*w*h*d;
+      f_idx = j*(((kw*kh*d)/8)+1);
+      res_size = fconv(A + a_idx, F + f_idx, C, c_idx, Bias[j], Gamma[j],
+                       Beta[j], Mean[j], Std[j], w, h, d, kw, kh, sw, sh, pw, ph);
+      c_idx += res_size;
+    }
+  }
+}
+
 
 float dot3(uint8_t* A, uint8_t* W, int num_chan, int i, int j, int w, int h)
 {
