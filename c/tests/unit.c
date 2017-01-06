@@ -23,7 +23,7 @@ static char* test_float_dot() {
   out_idx = 0;
   for (i = -pw; i < W-kw+pw+1; ++i) {
     for (j = -ph; j < H-kh+ph+1; ++j) {
-      res = fconv(float_in, W1, in_chans, i, j, W, H, kw, kh);
+      res = fdot_3d(float_in, W1, i, j, W, H, in_chans, kw, kh);
       res += Bias1[0];
       res = BN(res, Gamma1[0], Beta1[0], Mean1[0], Std1[0]);
       res_sign = res > 0 ? 1 : 0;
