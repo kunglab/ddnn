@@ -247,8 +247,8 @@ class Sequential(object):
         num = x.shape[0]
         if ent_Ts is not None and ent_Ts[0]>=1:
             return self(x, test=test)[0], [num]
-
-        ys = exited = self.predict_with_mask(self, x, ent_Ts=ent_Ts, test=test)
+        # print("ent_Ts",ent_Ts)
+        ys, exited = self.predict_with_mask(x, ent_Ts=ent_Ts, test=test)
 
         exits = []
         exited = np.array(exited)
