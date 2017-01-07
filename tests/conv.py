@@ -31,7 +31,7 @@ print bu.np_to_floatC(np.sqrt(bn.avg_var).astype(np.float16), 'Std', 'row_major'
 print 'Binary (no BN)\n\n'
 x = np.random.random((2,2,5,5)).astype(np.float32) - 0.5
 x = bu.binarize(x)
-bconv = BinaryConvolution2D(2, 2, ksize=3, stride=1, pad=0)
+bconv = BinaryConvolution2D(2, 2, ksize=3, stride=2, pad=1)
 res = bconv(x)
 W = bconv.W.data
 print bu.np_to_packed_uint8C(bu.binarize_real(x).flatten(), 'A_in', 'row_major')
@@ -41,7 +41,7 @@ print bu.np_to_packed_uint8C(bu.binarize_real(res.data.flatten()), 'C_actual', '
 print 'Binary (BN)\n\n'
 x = np.random.random((2,2,5,5)).astype(np.float32) - 0.5
 x = bu.binarize(x)
-bconv = BinaryConvolution2D(2, 2, ksize=3, stride=1, pad=0)
+bconv = BinaryConvolution2D(2, 2, ksize=3, stride=1, pad=1)
 bconv.b.data = np.array([0.004, 0.006], dtype=np.float32)
 bn = BatchNormalization(2)
 bn.beta.data = np.array([-0.06, 0.01], dtype=np.float32)
