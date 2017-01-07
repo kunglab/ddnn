@@ -53,24 +53,26 @@ static char* test_bslice_2d_2()
   return 0;
 }
 
-static char* test_bslice_3d_1()
+static char* test_bslice_4d_1()
 {
-  uint8_t A_in[7] = {172,8,238,207,80,123,128};
-  uint8_t C_actual[2] = {163,128};
+  uint8_t A_in[13] = {255,100,40,250,237,136,118,34,228,97,65,230,160};
+  uint8_t C_actual[2] = {196,128};
   uint8_t C_comp[2] = {0};
 
-  char output_msg[] = "\nTEST: bslice_3d_1\nOutput Mismatch: \nComputed=%d, Actual=%d at index %d\n";
+  char output_msg[] = "\nTEST: bslice_4d_1\nOutput Mismatch: \nComputed=%d, Actual=%d at index %d\n";
   int i;
   int x = 1;
   int y = 1;
-  int z = 1;
+  int zi = 0;
+  int zj = 0;
   int w = 5;
   int h = 5;
+  int d = 2;
   int kw = 3;
   int kh = 3;
 
   /* tests padding slice */
-  bslice_3d(C_comp, A_in, x, y, z, w, h, kw, kh);
+  bslice_4d(C_comp, A_in, x, y, zi, zj, w, h, d, kw, kh);
   for (i = 0; i < 2; ++i) {
     sprintf(output_buf, output_msg, C_comp[i], C_actual[i], i);
     mu_assert(output_buf, C_comp[i] == C_actual[i]);
@@ -79,7 +81,61 @@ static char* test_bslice_3d_1()
   return 0;
 }
 
+static char* test_bslice_4d_2()
+{
+  uint8_t A_in[13] = {225,243,201,239,246,180,201,20,66,235,180,144,80};
+  uint8_t C_actual[2] = {237,128};
+  uint8_t C_comp[2] = {0};
 
+  char output_msg[] = "\nTEST: bslice_4d_2\nOutput Mismatch: \nComputed=%d, Actual=%d at index %d\n";
+  int i;
+  int x = 1;
+  int y = 1;
+  int zi = 0;
+  int zj = 1;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+
+  /* tests padding slice */
+  bslice_4d(C_comp, A_in, x, y, zi, zj, w, h, d,  kw, kh);
+  for (i = 0; i < 2; ++i) {
+    sprintf(output_buf, output_msg, C_comp[i], C_actual[i], i);
+    mu_assert(output_buf, C_comp[i] == C_actual[i]);
+  }
+
+  return 0;
+}
+
+static char* test_bslice_4d_3()
+{
+  uint8_t A_in[13] = {154,177,216,120,179,189,80,219,250,64,124,86,48};
+  uint8_t C_actual[2] = {226,128};
+  uint8_t C_comp[2] = {0};
+
+  char output_msg[] = "\nTEST: bslice_4d_3\nOutput Mismatch: \nComputed=%d, Actual=%d at index %d\n";
+  int i;
+  int x = 1;
+  int y = 1;
+  int zi = 1;
+  int zj = 1;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+
+  /* tests padding slice */
+  bslice_4d(C_comp, A_in, x, y, zi, zj, w, h, d,  kw, kh);
+  for (i = 0; i < 2; ++i) {
+    sprintf(output_buf, output_msg, C_comp[i], C_actual[i], i);
+    mu_assert(output_buf, C_comp[i] == C_actual[i]);
+  }
+
+  return 0;
+}
 
 static char* test_bdot_1()
 {
@@ -139,8 +195,16 @@ static char* test_bdot_3d_1()
   int actual = 1;
   int comp;
   char output_msg[] = "\nTEST: bdot_3d_1\nOutput Mismatch: \nComputed=%d, Actual=%d\n";
+  int x = 0;
+  int y = 0;
+  int z = 0;
+  int w = 5;
+  int h = 5;
+  int d = 5;
+  int kw = 3;
+  int kh = 3;
+  comp = bdot_3d(A_in, B_in, x, y, z, w, h, d, kw, kh);
 
-  comp = bdot_3d(A_in, B_in, 0, 0, 5, 5, 5, 3, 3);
   sprintf(output_buf, output_msg, comp, actual);
   mu_assert(output_buf, comp == actual);
 
@@ -149,13 +213,21 @@ static char* test_bdot_3d_1()
 
 static char* test_bdot_3d_2()
 {
-  uint8_t A_in[16] = {120,106,152,142,59,84,11,54,43,107,15,165,209,194,214,136};
-  uint8_t B_in[10] = {52,127,160,127,92,127,83,255,182,127};
-  int actual = 1;
+  uint8_t A_in[13] = {225,216,182,106,214,243,107,74,61,188,110,68,0};
+  uint8_t B_in[8] = {240,255,35,127,19,255,136,255};
+  int actual = 4;
   int comp;
   char output_msg[] = "\nTEST: bdot_3d_2\nOutput Mismatch: \nComputed=%d, Actual=%d\n";
+  int x = 0;
+  int y = 0;
+  int z = 1;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+  comp = bdot_3d(A_in, B_in, x, y, z, w, h, d, kw, kh);
 
-  comp = bdot_3d(A_in, B_in, -1, -1, 5, 5, 5, 3, 3);
   sprintf(output_buf, output_msg, comp, actual);
   mu_assert(output_buf, comp == actual);
 
@@ -316,6 +388,87 @@ static char* test_fconv_2()
   return 0;
 }
 
+static char* test_bconv_1()
+{
+  uint8_t A_in[4] = {203,4,94,0};
+  uint8_t F_in[2] = {129,127};
+  uint8_t C_actual[2] = {239,0};
+  uint8_t C_comp[4] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: bconv_1[No Padding]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i, res_size;
+
+  int w = 5;
+  int h = 5;
+  int d = 1;
+  int kw = 3;
+  int kh = 3;
+  int sw = 1;
+  int sh = 1;
+  int pw = 0;
+  int ph = 0;
+  int c_idx = 0;
+  int z = 0;
+  float bias = 0.0;
+  float gamma = 1.0;
+  float beta = 0.0;
+  float mean = 0.0;
+  float std = 1.0;
+
+  res_size = bconv(A_in, F_in, C_comp, c_idx, z, bias, gamma, beta, mean, std, w, h, d,
+                   kw, kh, sw, sh, pw, ph);
+  c_idx += res_size;
+
+  for (i = 0; i < c_idx; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
+
+static char* test_bconv_2()
+{
+  uint8_t A_in[4] = {190,2,145,0};
+  uint8_t F_in[2] = {2,127};
+  uint8_t C_actual[1] = {48};
+  uint8_t C_comp[4] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: bconv_2[Stride=2]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i, res_size;
+
+  int w = 5;
+  int h = 5;
+  int d = 1;
+  int kw = 3;
+  int kh = 3;
+  int sw = 2;
+  int sh = 2;
+  int pw = 0;
+  int ph = 0;
+  int c_idx = 0;
+  int z = 0;
+  float bias = 0.0;
+  float gamma = 1.0;
+  float beta = 0.0;
+  float mean = 0.0;
+  float std = 1.0;
+
+  res_size = bconv(A_in, F_in, C_comp, c_idx, z, bias, gamma, beta, mean, std, w, h, d,
+                   kw, kh, sw, sh, pw, ph);
+  c_idx += res_size;
+
+  for (i = 0; i < c_idx; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
 
 static char* test_fconv_layer_1 () {
   float A_in[100] = {0.2196,0.80322,0.52344,0.20178,0.89502,0.20825,0.85547,0.35864,0.56934,0.46558,0.44653,0.67871,0.80371,0.61133,0.71582,0.73047,0.80908,0.011681,0.59961,0.1969,0.087585,0.30371,0.57373,0.35352,0.11487,0.87012,0.75684,0.38135,0.95312,0.32471,0.82764,0.39404,0.92969,0.13708,0.73535,0.049194,0.68115,0.88379,0.80029,0.058533,0.88428,0.21521,0.21899,0.41943,0.12115,0.5,0.39697,0.15576,0.20361,0.16345,0.37231,0.6543,0.54053,0.74658,0.9873,0.064514,0.27979,0.62402,0.24426,0.65381,0.63721,0.5,0.23499,0.1825,0.50781,0.39697,0.28784,0.25244,0.41211,0.13623,0.7168,0.20093,0.89307,0.99316,0.32935,0.58398,0.56592,0.78662,0.30444,0.011703,0.05011,0.81592,0.65039,0.64502,0.74707,0.68311,0.49756,0.18518,0.78125,0.52783,0.1781,0.72949,0.15076,0.35571,0.5835,0.72363,0.65039,0.71826,0.83154,0.92236};
@@ -476,15 +629,97 @@ static char* test_fconv_layer_4 () {
   return 0;
 }
 
+static char* test_bconv_layer_1 () {
+  uint8_t A_in[13] = {245,212,227,150,46,107,57,118,154,193,32,158,64};
+  uint8_t F_in[8] = {153,127,220,127,198,255,67,255};
+  uint8_t C_actual[5] = {49,229,48,127,192};
+  uint8_t C_comp[5] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: bconv_layer_1\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i;
+
+  int m = 2;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+  int sw = 1;
+  int sh = 1;
+  int pw = 0;
+  int ph = 0;
+  int num_f = 2;
+  float Bias[2] = {0.0, 0.0};
+  float Gamma[2] = {1.0, 1.0};
+  float Beta[2] = {0.0, 0.0};
+  float Mean[2] = {0.0, 0.0};
+  float Std[2] = {1.0, 1.0};
+
+
+  bconv_layer(A_in, F_in, C_comp, Bias, Gamma, Beta, Mean, Std, m, num_f, w,
+              h, d, kw, kh, sw, sh, pw, ph);
+
+  for (i = 0; i < 36; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
+
+
+static char* test_bconv_layer_2 () {
+  uint8_t A_in[13] = {77,240,211,188,77,248,225,98,22,242,202,185,208};
+  uint8_t F_in[8] = {127,255,209,255,135,127,110,127};
+  uint8_t C_actual[5] = {141,225,2,168,208};
+
+  uint8_t C_comp[5] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: bconv_layer_2\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i;
+
+  int m = 2;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+  int sw = 1;
+  int sh = 1;
+  int pw = 0;
+  int ph = 0;
+  int num_f = 2;
+  float Bias[2] = {0.0040016,0.0060005};
+  float Beta[2] = {-0.059998,0.010002};
+  float Gamma[2] = {1.0195,1.2002};
+  float Mean[2] = {0.022629,0.022827};
+  float Std[2] = {1.0605,1.1035};
+
+  bconv_layer(A_in, F_in, C_comp, Bias, Gamma, Beta, Mean, Std, m, num_f, w,
+              h, d, kw, kh, sw, sh, pw, ph);
+
+  for (i = 0; i < 36; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
+
+
 static char* test_blinear_layer_1 () {
   uint8_t A_in[160] = {223,220,2,167,118,210,29,66,80,32,248,230,79,133,233,108,226,38,93,239,148,166,71,102,133,201,170,225,249,8,123,150,238,127,198,121,100,99,169,49,228,11,19,35,92,28,17,236,103,118,81,217,61,212,58,225,64,184,52,214,53,58,112,160,211,73,81,190,39,151,177,164,76,34,209,218,69,88,78,58,216,35,83,82,12,147,96,51,60,57,125,142,177,172,192,142,245,240,35,106,73,66,157,242,112,149,222,79,66,172,97,232,63,78,8,112,5,236,190,211,253,158,211,118,76,45,209,136,214,111,139,45,45,182,0,70,6,107,238,144,87,61,70,100,4,95,33,75,94,94,61,115,179,47,37,193,155,234,109,108};
   uint8_t F_in[32] = {233,6,115,180,129,72,93,153,182,51,73,224,18,65,218,53,92,10,252,156,0,207,189,160,46,156,24,180,243,31,127,159};
   uint8_t C_actual[3] = {145,243,0};
-
   uint8_t C_comp[3] = {0};
   uint8_t comp, actual;
   char output_msg[] = "\nTEST: blinear_layer_1\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
   int i;
+
   int m = 10;
   int n = 127;
   int k = 2;
@@ -512,7 +747,9 @@ static char* all_tests()
 {
   mu_run_test(test_bslice_2d_1);
   mu_run_test(test_bslice_2d_2);
-  mu_run_test(test_bslice_3d_1);
+  mu_run_test(test_bslice_4d_1);
+  mu_run_test(test_bslice_4d_2);
+  mu_run_test(test_bslice_4d_3);
   mu_run_test(test_bdot_1);
   mu_run_test(test_bdot_2);
   mu_run_test(test_bdot_3);
@@ -523,10 +760,14 @@ static char* all_tests()
   mu_run_test(test_fdot_3d_3);
   mu_run_test(test_fconv_1);
   mu_run_test(test_fconv_2);
+  mu_run_test(test_bconv_1);
+  mu_run_test(test_bconv_2);
   mu_run_test(test_fconv_layer_1);
   mu_run_test(test_fconv_layer_2);
   mu_run_test(test_fconv_layer_3);
   mu_run_test(test_fconv_layer_4);
+  mu_run_test(test_bconv_layer_1);
+  mu_run_test(test_bconv_layer_2);
   mu_run_test(test_blinear_layer_1);
   return 0;
 }
