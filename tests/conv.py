@@ -32,9 +32,9 @@ print bu.np_to_floatC(np.sqrt(bn.avg_var).astype(np.float16), 'Std', 'row_major'
 print 'Binary (no BN)\n\n'
 x = np.random.random((2,2,5,5)).astype(np.float32) - 0.5
 # x = bu.binarize(x)
-bconv = BinaryConvolution2D(2, 2, ksize=3, stride=2, pad=1)
+bconv = BinaryConvolution2D(2, 2, ksize=3, stride=1, pad=1)
 inter_res = bconv(x)
-res = max_pooling_2d(inter_res, 2, 1, 0)
+res = max_pooling_2d(inter_res, 2, 1, 1)
 W = bconv.W.data
 #for binary
 # print bu.np_to_packed_uint8C(bu.binarize_real(x).flatten(), 'A_in', 'row_major')

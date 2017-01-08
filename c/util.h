@@ -405,8 +405,8 @@ int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
   c_mask = 0 | (1 << c_shift);
   c_idx = c_start_idx / 8;
   res_size = 0;
-  for (pl_i = -pl_pw; pl_i < (w - kw + 2*pw)/sw + 1; pl_i += pl_sw) {
-  for (pl_j = -pl_ph; pl_j < (h - kh + 2*ph)/sh + 1; pl_j += pl_sh) {
+  for (pl_i = -pl_pw; pl_i < (w - kw + 2*pw)/sw - pl_w + 2; pl_i += pl_sw) {
+  for (pl_j = -pl_ph; pl_j < (h - kh + 2*ph)/sh - pl_h + 2; pl_j += pl_sh) {
     max_res = -FLT_MAX;
     w_cnt = 0;
     for (i = -pw + pl_i * sw; w_cnt < pl_w && i < w + pw - kw + 1; i += sw) {
@@ -418,9 +418,9 @@ int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
       }
       else {
         res = fdot_3d(A, F, i, j, w, h, d, kw, kh);
+        printf("%d-%d:: %d,%d: %f\n", pl_i, pl_j, i, j, res);
       }
       max_res = MAX(res, max_res);
-      printf("%d,%d: %f, %f\n", i, j, res, max_res);
       h_cnt++;
     }
     w_cnt++;
@@ -428,7 +428,7 @@ int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
     max_res += Bias;
     max_res = BN(max_res, Gamma, Beta, Mean, Std);
     res_sign = max_res >= 0 ? 1 : 0;
-    printf("%d,%d: %d\n", pl_i, pl_j, res_sign);
+    printf("%d,%d: %f\n", pl_i, pl_j, max_res);
 
     /* store result */
     C[c_idx] |= res_sign << c_shift;
