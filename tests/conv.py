@@ -8,6 +8,7 @@ import numpy as np
 import chainer_sequential.binary.utils.binary_util as bu
 from chainer_sequential.binary.links.link_binary_convolution import BinaryConvolution2D
 from chainer_sequential.binary.links.link_batch_normalization import BatchNormalization
+from chainer.functions import max_pooling_2d
 
 x = np.random.random((2,2,5,5)).astype(np.float32)
 bconv = BinaryConvolution2D(2, 2, ksize=3, stride=1, pad=1)
@@ -30,13 +31,19 @@ print bu.np_to_floatC(np.sqrt(bn.avg_var).astype(np.float16), 'Std', 'row_major'
 
 print 'Binary (no BN)\n\n'
 x = np.random.random((2,2,5,5)).astype(np.float32) - 0.5
-x = bu.binarize(x)
+# x = bu.binarize(x)
 bconv = BinaryConvolution2D(2, 2, ksize=3, stride=2, pad=1)
-res = bconv(x)
+inter_res = bconv(x)
+res = max_pooling_2d(inter_res, 2, 1, 0)
 W = bconv.W.data
-print bu.np_to_packed_uint8C(bu.binarize_real(x).flatten(), 'A_in', 'row_major')
-print bu.np_to_uint8C(bu.binarize_real(W.reshape(4, -1)), 'F_in', 'row_major', pad='1')
+#for binary
+# print bu.np_to_packed_uint8C(bu.binarize_real(x).flatten(), 'A_in', 'row_major')
+# print bu.np_to_uint8C(bu.binarize_real(W.reshape(4, -1)), 'F_in', 'row_major', pad='1')
+#for float
+print bu.np_to_floatC(x.flatten(), 'A_in', 'row_major')
+print bu.np_to_uint8C(bu.binarize_real(W.reshape(2, -1)), 'F_in', 'row_major', pad='1')
 print bu.np_to_packed_uint8C(bu.binarize_real(res.data.flatten()), 'C_actual', 'row_major', pad='0')
+assert False
 
 print 'Binary (BN)\n\n'
 x = np.random.random((2,2,5,5)).astype(np.float32) - 0.5
