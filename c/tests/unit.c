@@ -571,6 +571,12 @@ static char* test_bconv_1()
   int sh = 1;
   int pw = 0;
   int ph = 0;
+  int pl_w = 1;
+  int pl_h = 1;
+  int pl_sw = 1;
+  int pl_sh = 1;
+  int pl_pw = 0;
+  int pl_ph = 0;
   int c_idx = 0;
   int z = 0;
   float bias = 0.0;
@@ -580,7 +586,7 @@ static char* test_bconv_1()
   float std = 1.0;
 
   res_size = bconv(A_in, F_in, C_comp, c_idx, z, bias, gamma, beta, mean, std, w, h, d,
-                   kw, kh, sw, sh, pw, ph);
+                   kw, kh, sw, sh, pw, ph, pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
   c_idx += res_size;
 
   for (i = 0; i < c_idx; ++i) {
@@ -612,6 +618,12 @@ static char* test_bconv_2()
   int sh = 2;
   int pw = 0;
   int ph = 0;
+  int pl_w = 1;
+  int pl_h = 1;
+  int pl_sw = 1;
+  int pl_sh = 1;
+  int pl_pw = 0;
+  int pl_ph = 0;
   int c_idx = 0;
   int z = 0;
   float bias = 0.0;
@@ -621,7 +633,7 @@ static char* test_bconv_2()
   float std = 1.0;
 
   res_size = bconv(A_in, F_in, C_comp, c_idx, z, bias, gamma, beta, mean, std, w, h, d,
-                   kw, kh, sw, sh, pw, ph);
+                   kw, kh, sw, sh, pw, ph, pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
   c_idx += res_size;
 
   for (i = 0; i < c_idx; ++i) {
@@ -916,6 +928,53 @@ static char* test_fconv_layer_6 () {
   return 0;
 }
 
+static char* test_fconv_layer_7 () {
+  float A_in[100] = {-0.048118234,0.23588008,-0.026736647,0.12550074,0.085363209,-0.020438582,-0.45674947,-0.19378003,0.22604376,0.34855849,0.37394792,0.3227883,0.063009858,-0.24636707,-0.087616622,0.41776294,-0.48312747,0.45847005,0.030360162,0.06246984,-0.018491417,-0.39766738,-0.3008936,-0.054208159,-0.36226252,0.064722657,0.35087395,0.16493958,0.19645476,-0.22623426,0.27748424,0.16742623,-0.46567029,0.3893882,-0.25467384,0.18695241,0.36982131,-0.23882443,0.065021694,0.47647798,0.33711278,0.35661864,0.18926436,-0.39279062,-0.079973221,-0.051795155,0.33592594,-0.055170268,0.20475101,-0.17016655,-0.040810704,0.34154838,0.087694526,0.48137909,0.47917843,-0.32974583,-0.4528009,-0.096980244,-0.33364135,-0.26711097,0.38878417,-0.25219056,0.37112182,-0.056730151,-0.33907163,-0.37995982,-0.0034680068,-0.43465751,-0.33777004,-0.13465121,-0.34010711,-0.30652559,0.38589138,-0.40979624,0.33990932,-0.16752735,-0.0050165057,0.17611957,0.28188461,0.40580893,0.11652774,0.31788051,-0.085431308,-0.25249079,-0.43549955,-0.16365793,0.42371249,-0.49182764,-0.30598733,0.21528411,0.39033765,0.44134051,-0.39251918,0.35386038,-0.20389146,0.023635983,-0.18123606,0.11943817,0.1760506,0.1048277};
+  uint8_t F_in[6] = {94,94,255,203,94,127};
+  uint8_t C_actual[5] = {216,108,54,11,0};
+  uint8_t C_comp[8] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: fconv_layer_7[Pooling (Padding=1/Stride=2)]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i;
+
+  int m = 2;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+  int sw = 1;
+  int sh = 1;
+  int pw = 1;
+  int ph = 1;
+  int pl_w = 2;
+  int pl_h = 2;
+  int pl_sw = 2;
+  int pl_sh = 2;
+  int pl_pw = 1;
+  int pl_ph = 1;
+
+  int num_f = 2;
+  float Bias[2] = {0.0, 0.0};
+  float Gamma[2] = {1.0, 1.0};
+  float Beta[2] = {0.0, 0.0};
+  float Mean[2] = {0.0, 0.0};
+  float Std[2] = {1.0, 1.0};
+
+  fconv_layer(A_in, F_in, C_comp, Bias, Gamma, Beta, Mean, Std, m, num_f,
+              w, h, d, kw, kh, sw, sh, pw, ph,
+              pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
+
+  for (i = 0; i < 64; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
+
 static char* test_bconv_layer_1 () {
   uint8_t A_in[13] = {208,40,250,231,111,235,200,200,19,101,206,21,112};
   uint8_t F_in[8] = {233,127,191,127,236,255,78,127};
@@ -1101,7 +1160,143 @@ static char* test_bconv_layer_4 () {
   return 0;
 }
 
+static char* test_bconv_layer_5 () {
+  uint8_t A_in[13] = {109,125,86,190,223,65,109,117,7,36,211,5,16};
+  uint8_t F_in[8] = {220,255,87,255,32,127,37,255};
+  uint8_t C_actual[8] = {255,255,236,159,255,191,223,255};
+  uint8_t C_comp[8] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: bconv_layer_5[Pooling (Padding=0, Stride=1)]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i;
 
+  int m = 2;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+  int sw = 1;
+  int sh = 1;
+  int pw = 1;
+  int ph = 1;
+  int pl_w = 2;
+  int pl_h = 2;
+  int pl_sw = 1;
+  int pl_sh = 1;
+  int pl_pw = 0;
+  int pl_ph = 0;
+  int num_f = 2;
+  float Bias[2] = {0.0, 0.0};
+  float Gamma[2] = {1.0, 1.0};
+  float Beta[2] = {0.0, 0.0};
+  float Mean[2] = {0.0, 0.0};
+  float Std[2] = {1.0, 1.0};
+
+  bconv_layer(A_in, F_in, C_comp, Bias, Gamma, Beta, Mean, Std, m, num_f,
+              w, h, d, kw, kh, sw, sh, pw, ph,
+              pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
+
+  for (i = 0; i < 64; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
+
+static char* test_bconv_layer_6 () {
+  uint8_t A_in[13] = {22,239,98,37,60,128,218,13,69,43,12,29,112};
+  uint8_t F_in[8] = {147,127,237,127,73,255,44,127};
+  uint8_t C_actual[18] = {239,190,255,255,127,255,255,255,207,251,255,223,251,231,255,255,255,255};
+  uint8_t C_comp[18] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: bconv_layer_6[Pooling (Padding=1, Stride=1)]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i;
+
+  int m = 2;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+  int sw = 1;
+  int sh = 1;
+  int pw = 1;
+  int ph = 1;
+  int pl_w = 2;
+  int pl_h = 2;
+  int pl_sw = 1;
+  int pl_sh = 1;
+  int pl_pw = 1;
+  int pl_ph = 1;
+  int num_f = 2;
+  float Bias[2] = {0.0, 0.0};
+  float Gamma[2] = {1.0, 1.0};
+  float Beta[2] = {0.0, 0.0};
+  float Mean[2] = {0.0, 0.0};
+  float Std[2] = {1.0, 1.0};
+
+  bconv_layer(A_in, F_in, C_comp, Bias, Gamma, Beta, Mean, Std, m, num_f,
+              w, h, d, kw, kh, sw, sh, pw, ph,
+              pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
+
+  for (i = 0; i < 144; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
+
+static char* test_bconv_layer_7 () {
+  uint8_t A_in[13] = {151,196,21,137,214,209,24,198,246,221,187,140,80};
+  uint8_t F_in[8] = {244,127,10,255,19,127,42,127};
+  uint8_t C_actual[8] = {63,247,255,255,255,255,119,119};
+  uint8_t C_comp[18] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: bconv_layer_6[Conv (Stride=2), Pooling (Padding=1, Stride=1)]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i;
+
+  int m = 2;
+  int w = 5;
+  int h = 5;
+  int d = 2;
+  int kw = 3;
+  int kh = 3;
+  int sw = 2;
+  int sh = 2;
+  int pw = 1;
+  int ph = 1;
+  int pl_w = 2;
+  int pl_h = 2;
+  int pl_sw = 1;
+  int pl_sh = 1;
+  int pl_pw = 1;
+  int pl_ph = 1;
+  int num_f = 2;
+  float Bias[2] = {0.0, 0.0};
+  float Gamma[2] = {1.0, 1.0};
+  float Beta[2] = {0.0, 0.0};
+  float Mean[2] = {0.0, 0.0};
+  float Std[2] = {1.0, 1.0};
+
+  bconv_layer(A_in, F_in, C_comp, Bias, Gamma, Beta, Mean, Std, m, num_f,
+              w, h, d, kw, kh, sw, sh, pw, ph,
+              pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
+
+  for (i = 0; i < 64; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
 
 static char* test_blinear_layer_1 () {
   uint8_t A_in[160] = {223,220,2,167,118,210,29,66,80,32,248,230,79,133,233,108,226,38,93,239,148,166,71,102,133,201,170,225,249,8,123,150,238,127,198,121,100,99,169,49,228,11,19,35,92,28,17,236,103,118,81,217,61,212,58,225,64,184,52,214,53,58,112,160,211,73,81,190,39,151,177,164,76,34,209,218,69,88,78,58,216,35,83,82,12,147,96,51,60,57,125,142,177,172,192,142,245,240,35,106,73,66,157,242,112,149,222,79,66,172,97,232,63,78,8,112,5,236,190,211,253,158,211,118,76,45,209,136,214,111,139,45,45,182,0,70,6,107,238,144,87,61,70,100,4,95,33,75,94,94,61,115,179,47,37,193,155,234,109,108};
@@ -1166,10 +1361,14 @@ static char* all_tests()
   mu_run_test(test_fconv_layer_4);
   mu_run_test(test_fconv_layer_5);
   mu_run_test(test_fconv_layer_6);
+  /* mu_run_test(test_fconv_layer_7); */
   mu_run_test(test_bconv_layer_1);
   mu_run_test(test_bconv_layer_2);
   mu_run_test(test_bconv_layer_3);
   mu_run_test(test_bconv_layer_4);
+  mu_run_test(test_bconv_layer_5);
+  mu_run_test(test_bconv_layer_6);
+  /* mu_run_test(test_bconv_layer_7); */
   mu_run_test(test_blinear_layer_1);
   return 0;
 }
