@@ -397,29 +397,29 @@ int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
           int pl_pw, int pl_ph)
 {
   uint8_t c_mask, res_sign;
-  int pl_i, pl_j, i, j, c_shift, c_idx, res_size, w_cnt, h_cnt;
+  int pl_i, pl_j, i, j,  c_shift, c_idx, res_size, w_cnt, h_cnt;
   float res, max_res;
 
-  printf("enter\n");
+  /* printf("enter\n"); */
   c_shift = 7 - (c_start_idx % 8);
   c_mask = 0 | (1 << c_shift);
   c_idx = c_start_idx / 8;
   res_size = 0;
-  for (pl_i = -pl_pw; pl_i < (w - kw + 2*pw)/sw - pl_w + 2; pl_i += pl_sw) {
-  for (pl_j = -pl_ph; pl_j < (h - kh + 2*ph)/sh - pl_h + 2; pl_j += pl_sh) {
+  for (pl_i = 0; pl_i < (w - kw + 2*pw)/sw - pl_w + (2*pl_pw) + 2; pl_i += pl_sw) {
+  for (pl_j = 0; pl_j < (h - kh + 2*ph)/sh - pl_h + (2*pl_ph) + 2; pl_j += pl_sh) {
     max_res = -FLT_MAX;
     w_cnt = 0;
-    for (i = -pw + pl_i * sw; w_cnt < pl_w && i < w + pw - kw + 1; i += sw) {
+    for (i = -pl_pw-pw + pl_i * sw; w_cnt < pl_w && i < w + pw - kw + 1; i += sw) {
     h_cnt = 0;
-    for (j = -ph + pl_j * sh; h_cnt < pl_h && j < h + ph - kh + 1; j += sh) {
+    for (j = -pl_ph-ph + pl_j * sh; h_cnt < pl_h && j < h + ph - kh + 1; j += sh) {
       //pooling padding
-      if (i < -pw || i > w  || j < -ph || j > h) {
-        res = 0;
+      if (i  < -pw || i > w  || j < -ph || j > h) {
+        res = -FLT_MAX;
       }
       else {
         res = fdot_3d(A, F, i, j, w, h, d, kw, kh);
-        printf("%d-%d:: %d,%d: %f\n", pl_i, pl_j, i, j, res);
       }
+      /* printf("%d-%d:: %d,%d: %f\n", pl_i, pl_j, i, j, res); */
       max_res = MAX(res, max_res);
       h_cnt++;
     }
@@ -428,7 +428,7 @@ int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
     max_res += Bias;
     max_res = BN(max_res, Gamma, Beta, Mean, Std);
     res_sign = max_res >= 0 ? 1 : 0;
-    printf("%d,%d: %f\n", pl_i, pl_j, max_res);
+    /* printf("%d,%d: %f\n", pl_i, pl_j, max_res); */
 
     /* store result */
     C[c_idx] |= res_sign << c_shift;
