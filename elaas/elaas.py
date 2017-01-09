@@ -8,10 +8,25 @@ from chainer_sequential.binary.utils import binary_util as bu
 from chainer.training import extensions
 import chainer
 
+import errno    
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
 class Collection(object):
-    def __init__(self, name, path="_models", nepochs=10, verbose=False):
+    def __init__(self, name="collection", path="_models", nepochs=10, verbose=False):
+        # create the folder if it does not exist
+        if not os.path.exists("_models"):
+            mkdir_p(path)
+        
         self.name = name
         self.path = path
+
         self.folder = '{}/{}'.format(self.path,name)
         self.verbose = verbose
 
@@ -52,7 +67,7 @@ class Collection(object):
         pp(sample)
         print('')
 
-    def train(self, niters=10, bootstrap_nepochs=2):
+    def train(self, niters=1, bootstrap_nepochs=1):
         do = self.do
         i = 0
         # Bootstrap epochs
