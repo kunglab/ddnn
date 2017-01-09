@@ -4,7 +4,7 @@ We study embedded Binarized Neural Networks (eBNNs) with the aim of allowing cur
 
 This repository contains a code to train a neural network and generate C/Arduino code for embedded devices such as Arduino 101. 
 
-# Dependencies
+## Dependencies
 
 This library is dependent on Python 2.7+ and [Chainer](http://chainer.org/). Please install Chainer 1.17+ before starting.
 
@@ -12,7 +12,7 @@ This library is dependent on Python 2.7+ and [Chainer](http://chainer.org/). Ple
 pip install chainer
 ```
 
-# Quick Start
+## Quick Start
 ```python
 import os
 import sys
@@ -62,7 +62,7 @@ compute()
 println("%d",output[0]);
 ```
 
-# Paper
+## Paper
 
 Our paper is available [here](http://www.eecs.harvard.edu/~htk/publication/2017-ewsn-mcdanel-teerapittayanon-kung.pdf)
 
@@ -76,7 +76,7 @@ If you use this model or codebase, please cite:
 }
 ```
 
-# License
+## License
   
 Copyright (c) 2017 Bradley McDanel, Surat Teerapittayanon, HT Kung, Harvard University
 
