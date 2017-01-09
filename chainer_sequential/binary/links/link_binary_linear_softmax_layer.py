@@ -50,7 +50,7 @@ class BinaryLinearSoftmax(chainer.Chain, CLink):
         k = num_classes
 
         ftext = "void {name}(uint8_t* input, uint8_t* output){{\n"
-        ftext += "  linear_softmax_layer(input, {name}_bl_W, output, {name}_bl_b, {m}, {n}, {k}); \n}}\n\n"
+        ftext += "  blinear_layer(input, {name}_bl_W, output, {name}_bl_b, {m}, {n}, {k}); \n}}\n\n"
         ftext = ftext.format(name=name, m=m, n=n, k=k)
         text += ftext
 

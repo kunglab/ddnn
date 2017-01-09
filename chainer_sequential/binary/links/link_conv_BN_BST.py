@@ -11,14 +11,13 @@ from ..links import BST
 from ..utils import binary_util as bu
 
 class ConvBNBST(chainer.Chain, CLink):
-    def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0, flat_output=False):
+    def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0):
         super(ConvBNBST, self).__init__(
             bconv=BinaryConvolution2D(in_channels, out_channels, ksize=ksize, stride=stride, pad=pad),
             bn=BatchNormalization(out_channels),
             bst=BST()
         )
         self.cname = "l_conv_bn_bst"
-        self.flat_output = flat_output
 
     def __call__(self, h, test=False):
         #self.inp_shape = h.data.shape
@@ -35,10 +34,9 @@ class ConvBNBST(chainer.Chain, CLink):
         m = 1
         sw, sh = self.bconv.stride
         pw, ph = self.bconv.pad
-        if self.flat_output:
-            fo = 1
-        else:
-            fo = 0
+        pl_w, pl_h = 1, 1
+        pl_sw, pl_sh = 1, 1
+        pl_pw, pl_ph = 0, 0
 
         # Bconv
         l = self.bconv
@@ -47,7 +45,7 @@ class ConvBNBST(chainer.Chain, CLink):
             pname = p.name
             if pname == 'W':
                 num_f, n, kw, kh =  p.data.shape
-                bin_data = bu.binarize_real(p.data).reshape(p.data.shape[0]*p.data.shape[1], -1)
+                bin_data = bu.binarize_real(p.data).reshape(p.data.shape[0], -1)
                 text += [bu.np_to_uint8C(bin_data, lname+'_'+pname, 'row_major', pad='1')]
             elif pname == 'b':
                 text += [bu.np_to_floatC(p.data, lname+'_'+pname, 'row_major')]
@@ -69,11 +67,13 @@ class ConvBNBST(chainer.Chain, CLink):
                 text += [bu.np_to_floatC(persistent, lname+'_mean', 'row_major')]
             elif pname == 'avg_var':
                 text += [bu.np_to_floatC(np.sqrt(persistent, dtype=persistent.dtype), lname+'_std', 'row_major')]
-
         text = "\n".join(text)+'\n'
         ftext = "void {name}(float* input, uint8_t* output){{\n"
-        ftext += "  fused_float_conv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {n}, {w}, {h}, {num_f}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {flat_output});\n}}\n\n"
-        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw, kh=kh, sw=sw, sh=sh, pw=pw, ph=ph, flat_output=fo)
+        ftext += "  fconv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {num_f}, {w}, {h}, {n}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {pl_w}, {pl_h}, {pl_sw}, {pl_sh}, {pl_pw}, {pl_ph});\n}}\n\n"
+        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw,
+                             kh=kh, sw=sw, sh=sh, pw=pw, ph=ph, pl_w=pl_w,
+                             pl_h=pl_h, pl_sw=pl_sw, pl_sh=pl_sh, pl_pw=pl_pw,
+                             pl_ph=pl_ph)
         text += ftext
 
         return text

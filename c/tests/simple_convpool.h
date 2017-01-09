@@ -1,13 +1,13 @@
 
 #include "util.h"
-uint8_t l_conv_bn_bst0_bconv_W[4] = {242,255,132,255};
-float l_conv_bn_bst0_bconv_b[2] = {0.0036910141,0.005829772};
-float l_conv_bn_bst0_bn_gamma[2] = {1.0003844,1.0007571};
-float l_conv_bn_bst0_bn_beta[2] = {-0.061328143,0.012253596};
-float l_conv_bn_bst0_bn_mean[2] = {0.39471143,-0.38759711};
-float l_conv_bn_bst0_bn_std[2] = {0.84309483,0.99606001};
-void l_conv_bn_bst0(float* input, uint8_t* output){
-  fconv_layer(input, l_conv_bn_bst0_bconv_W, output, l_conv_bn_bst0_bconv_b, l_conv_bn_bst0_bn_gamma, l_conv_bn_bst0_bn_beta, l_conv_bn_bst0_bn_mean, l_conv_bn_bst0_bn_std, 1, 2, 28, 28, 1, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0);
+uint8_t l_conv_pool_bn_bst0_bconv_W[4] = {242,255,132,255};
+float l_conv_pool_bn_bst0_bconv_b[2] = {0.0036910141,0.005829772};
+float l_conv_pool_bn_bst0_bn_gamma[2] = {1.0003844,1.0007571};
+float l_conv_pool_bn_bst0_bn_beta[2] = {-0.061328143,0.012253596};
+float l_conv_pool_bn_bst0_bn_mean[2] = {0.39471143,-0.38759711};
+float l_conv_pool_bn_bst0_bn_std[2] = {0.84309483,0.99606001};
+void l_conv_pool_bn_bst0(float* input, uint8_t* output){
+  fconv_layer(input, l_conv_pool_bn_bst0_bconv_W, output, l_conv_pool_bn_bst0_bconv_b, l_conv_pool_bn_bst0_bn_gamma, l_conv_pool_bn_bst0_bn_beta, l_conv_pool_bn_bst0_bn_mean, l_conv_pool_bn_bst0_bn_std, 1, 2, 28, 28, 1, 3, 3, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1);
 }
 
 float l_b_linear_bn_softmax1_bl_b[10] = {0.0015731278,0.0011348516,-8.691386e-05,0.00019502325,0.0014512656,0.00064003374,6.7366869e-05,-0.00010249004,0.00059620145,0.0010772175};
@@ -17,7 +17,7 @@ float l_b_linear_bn_softmax1_bn_beta[10] = {-0.018699635,0.0072967391,0.01367591
 float l_b_linear_bn_softmax1_bn_mean[10] = {208.85899,186.85066,-4.7744455,-26.191326,209.70303,67.183121,-53.69236,-63.630692,37.56987,81.884613};
 float l_b_linear_bn_softmax1_bn_std[10] = {62.687672,68.038681,63.31142,65.007751,54.911938,46.456116,59.427055,60.494011,53.431396,53.293175};
 void l_b_linear_bn_softmax1(uint8_t* input, uint8_t* output){
-  blinear_layer(input, l_b_linear_bn_softmax1_bl_W, output, l_b_linear_bn_softmax1_bl_b, l_b_linear_bn_softmax1_bn_gamma, l_b_linear_bn_softmax1_bn_beta, l_b_linear_bn_softmax1_bn_mean, l_b_linear_bn_softmax1_bn_std, 1, 1568, 10);
+  blinear_layer(input, l_b_linear_bn_softmax1_bl_W, output, l_b_linear_bn_softmax1_bl_b, l_b_linear_bn_softmax1_bn_gamma, l_b_linear_bn_softmax1_bn_beta, l_b_linear_bn_softmax1_bn_mean, l_b_linear_bn_softmax1_bn_std, 1, 1568, 10); 
 }
 
 
@@ -27,6 +27,6 @@ uint8_t output[1] = {0};
 uint8_t temp1[196] = {0}; // Allocate large enough
 uint8_t temp2[196] = {0}; // Allocate large enough
 void compute(){
-  l_conv_bn_bst0(input, temp1);
+  l_conv_pool_bn_bst0(input, temp1);
   l_b_linear_bn_softmax1(temp1, output);
 }

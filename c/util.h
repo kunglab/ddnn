@@ -190,36 +190,25 @@ int bslice_4d(uint8_t* dst, uint8_t* src, int x, int y, int zi, int zj,
 void blinear_layer(uint8_t* A, uint8_t* B, uint8_t* C, float* Bias, float* Gamma,
                    float* Beta, float* Mean, float* Std, int m, int n, int k)
 {
-  int i, j, ni, ki, ri, ci, c_idx, res_sign, c_shift;
-  uint8_t c_mask;
-  float res;
+  int i, j, ni, ri, ci,  max_idx;
+  float res, max_res;
 
   /* Compute ceil in terms of 8-bits strides */
   ni = (n + 7) / 8;
-  ki = (k + 7) / 8;
-
-  /* Initalize the result matrix */
-  for (i = 0; i < m*ki; ++i) C[i] = 0;
-
-  c_idx = 0;
-  c_shift = 7;
-  c_mask = 0x80;
   for (i = 0; i < m; ++i) {
+    max_res = -FLT_MAX;
     ri = i * ni;
     for (j = 0; j < k; ++j) {
       ci = j * ni;
       res = bdot(A + ri, B + ci, n);
       res += Bias[j];
       res = BN(res, Gamma[j], Beta[j], Mean[j], Std[j]);
-      res_sign = res >= 0 ? 1 : 0;
-
-      //Need to shift to correct bit location
-      C[c_idx] |= (res_sign << c_shift);
-      c_mask = rotr1(c_mask);
-      c_idx += (c_mask & 0x80) >> 7;
-      c_shift--;
-      c_shift = c_shift < 0 ? 7 : c_shift;
+      if (res > max_res) {
+        max_idx = j;
+        max_res = res;
+      }
     }
+    C[i] = max_idx;
   }
 }
 
