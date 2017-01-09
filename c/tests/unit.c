@@ -1399,16 +1399,16 @@ static char* all_tests()
   mu_run_test(test_fdot_3d_1);
   mu_run_test(test_fdot_3d_2);
   mu_run_test(test_fdot_3d_3);
-  /* mu_run_test(test_fconv_1); */
-  /* mu_run_test(test_fconv_2); */
+  mu_run_test(test_fconv_1);
+  mu_run_test(test_fconv_2);
   mu_run_test(test_bconv_1);
   mu_run_test(test_bconv_2);
-  /* mu_run_test(test_fconv_layer_1); */
-  /* mu_run_test(test_fconv_layer_2); */
-  /* mu_run_test(test_fconv_layer_3); */
-  /* mu_run_test(test_fconv_layer_4); */
-  /* mu_run_test(test_fconv_layer_5); */
-  /* mu_run_test(test_fconv_layer_6); */
+  mu_run_test(test_fconv_layer_1);
+  mu_run_test(test_fconv_layer_2);
+  mu_run_test(test_fconv_layer_3);
+  mu_run_test(test_fconv_layer_4);
+  mu_run_test(test_fconv_layer_5);
+  mu_run_test(test_fconv_layer_6);
   /* mu_run_test(test_fconv_layer_7); */
   mu_run_test(test_fconv_layer_8);
   mu_run_test(test_bconv_layer_1);
