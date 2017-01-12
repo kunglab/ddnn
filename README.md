@@ -72,7 +72,7 @@ If you use this model or codebase, please cite:
   title={Embedded Binarized Neural Networks},
   author={McDanel, Bradley and Teerapittayanon, Surat and Kung, HT},
   jornal={Proceedings of the 2017 International Conference on Embedded Wireless Systems and Networks},
-  year={2015}
+  year={2017}
 }
 ```
 
