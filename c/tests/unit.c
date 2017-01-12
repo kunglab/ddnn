@@ -10,7 +10,6 @@ int tests_run = 0;
 char output_buf[1000];
 int errors = 0;
 
-
 static char* test_bslice_2d_1()
 {
   uint8_t slice_2d_in[3] = {223,175,248};
@@ -458,7 +457,7 @@ static char* test_fconv_1()
   uint8_t C_comp[13] = {0};
   uint8_t comp, actual;
   char output_msg[] = "\nTEST: fconv_1\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
-  int i, res_size;
+  int i;
 
   int w = 5;
   int h = 5;
@@ -482,65 +481,9 @@ static char* test_fconv_1()
   float mean = 0.0;
   float std = 1.0;
 
-  res_size = fconv(A_in, F_in, C_comp, c_idx, bias, gamma, beta, mean, std,
-                   w, h, d, kw, kh, sw, sh, pw, ph,
-                   pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
-  c_idx += res_size;
-
-  for (i = 0; i < c_idx; ++i) {
-    actual = nthbitset_arr(C_actual, i);
-    comp = nthbitset_arr(C_comp, i);
-    sprintf(output_buf, output_msg, i, comp, i, actual);
-    mu_assert(output_buf, comp == actual);
-  }
-
-  return 0;
-}
-
-static char* test_fconv_2()
-{
-  float A_in[100] = {0.2196,0.80322,0.52344,0.20178,0.89502,0.20825,0.85547,0.35864,0.56934,0.46558,0.44653,0.67871,0.80371,0.61133,0.71582,0.73047,0.80908,0.011681,0.59961,0.1969,0.087585,0.30371,0.57373,0.35352,0.11487,0.87012,0.75684,0.38135,0.95312,0.32471,0.82764,0.39404,0.92969,0.13708,0.73535,0.049194,0.68115,0.88379,0.80029,0.058533,0.88428,0.21521,0.21899,0.41943,0.12115,0.5,0.39697,0.15576,0.20361,0.16345,0.37231,0.6543,0.54053,0.74658,0.9873,0.064514,0.27979,0.62402,0.24426,0.65381,0.63721,0.5,0.23499,0.1825,0.50781,0.39697,0.28784,0.25244,0.41211,0.13623,0.7168,0.20093,0.89307,0.99316,0.32935,0.58398,0.56592,0.78662,0.30444,0.011703,0.05011,0.81592,0.65039,0.64502,0.74707,0.68311,0.49756,0.18518,0.78125,0.52783,0.1781,0.72949,0.15076,0.35571,0.5835,0.72363,0.65039,0.71826,0.83154,0.92236};
-  uint8_t F_in[6] = {144,114,63,123,183,63};
-  uint8_t C_actual[13] = {0,0,2,255,255,253,128,0,0,63,255,255,240};
-  uint8_t C_comp[13] = {0};
-  uint8_t comp, actual;
-  char output_msg[] = "\nTEST: fconv_2\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
-  int i, j, res_size, c_idx, a_idx, f_idx;
-
-  int m = 2;
-  int w = 5;
-  int h = 5;
-  int d = 2;
-  int kw = 3;
-  int kh = 3;
-  int sw = 1;
-  int sh = 1;
-  int pw = 1;
-  int ph = 1;
-  int pl_w = 1;
-  int pl_h = 1;
-  int pl_sw = 1;
-  int pl_sh = 1;
-  int pl_pw = 0;
-  int pl_ph = 0;
-  int num_f = 2;
-  float bias = 0.0;
-  float gamma = 1.0;
-  float beta = 0.0;
-  float mean = 0.0;
-  float std = 1.0;
-
-  c_idx = 0;
-  for (i = 0; i < m; ++i) {
-    for (j = 0; j < num_f; ++j) {
-      a_idx = i*w*h*d;
-      f_idx = j*(((kw*kh*d)/8)+1);
-      res_size = fconv(A_in + a_idx, F_in + f_idx, C_comp, c_idx, bias, gamma,
-                       beta, mean, std, w, h, d, kw, kh, sw, sh, pw, ph,
-                       pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
-      c_idx += res_size;
-    }
-  }
+  fconv(A_in, F_in, C_comp, c_idx, bias, gamma, beta, mean, std,
+        w, h, d, kw, kh, sw, sh, pw, ph,
+        pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
 
   for (i = 0; i < c_idx; ++i) {
     actual = nthbitset_arr(C_actual, i);
@@ -560,7 +503,7 @@ static char* test_bconv_1()
   uint8_t C_comp[4] = {0};
   uint8_t comp, actual;
   char output_msg[] = "\nTEST: bconv_1[No Padding]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
-  int i, res_size;
+  int i;
 
   int w = 5;
   int h = 5;
@@ -585,9 +528,8 @@ static char* test_bconv_1()
   float mean = 0.0;
   float std = 1.0;
 
-  res_size = bconv(A_in, F_in, C_comp, c_idx, z, bias, gamma, beta, mean, std, w, h, d,
-                   kw, kh, sw, sh, pw, ph, pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
-  c_idx += res_size;
+  bconv(A_in, F_in, C_comp, c_idx, z, bias, gamma, beta, mean, std, w, h, d,
+        kw, kh, sw, sh, pw, ph, pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
 
   for (i = 0; i < c_idx; ++i) {
     actual = nthbitset_arr(C_actual, i);
@@ -607,7 +549,7 @@ static char* test_bconv_2()
   uint8_t C_comp[4] = {0};
   uint8_t comp, actual;
   char output_msg[] = "\nTEST: bconv_2[Stride=2]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
-  int i, res_size;
+  int i;
 
   int w = 5;
   int h = 5;
@@ -632,9 +574,8 @@ static char* test_bconv_2()
   float mean = 0.0;
   float std = 1.0;
 
-  res_size = bconv(A_in, F_in, C_comp, c_idx, z, bias, gamma, beta, mean, std, w, h, d,
-                   kw, kh, sw, sh, pw, ph, pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
-  c_idx += res_size;
+  bconv(A_in, F_in, C_comp, c_idx, z, bias, gamma, beta, mean, std, w, h, d,
+        kw, kh, sw, sh, pw, ph, pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
 
   for (i = 0; i < c_idx; ++i) {
     actual = nthbitset_arr(C_actual, i);
@@ -1541,7 +1482,6 @@ static char* all_tests()
   mu_run_test(test_fdot_3d_2);
   mu_run_test(test_fdot_3d_3);
   mu_run_test(test_fconv_1);
-  mu_run_test(test_fconv_2);
   mu_run_test(test_bconv_1);
   mu_run_test(test_bconv_2);
   mu_run_test(test_fconv_layer_1);

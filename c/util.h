@@ -24,7 +24,7 @@ int idx_2d(int i, int j, int rows);
 int idx_3d(int i, int j, int k, int rows, int cols);
 int idx_4d(int i, int j, int k, int l, int rows, int cols, int depth);
 int conv_idx(int pl_i, int x, int kx, int sx, int px);
-
+int convpool_size(int x, int kx, int sx, int px, int pl_x, int pl_sx, int pl_px);
 static int bslice_2d(uint8_t* dst, uint8_t* src, int x, int y,
               int w, int h, int kw, int kh);
 int bslice_2d_filter(uint8_t* dst, uint8_t* src, int x, int y,
@@ -49,15 +49,15 @@ void bconv_layer(uint8_t* A, uint8_t* F, uint8_t* C, float* Bias, float* Gamma,
 /* layer helper functions */
 float BN(float f, float Gamma, float Beta, float Mean, float Std);
 int bdot(uint8_t* A, uint8_t* B, int N);
-int bconv(uint8_t* A, uint8_t* F, uint8_t* C, int c_start_idx, int z,
-          float Bias, float Gamma, float Beta, float Mean, float Std,
-          int w, int h, int d, int kw, int kh, int sw, int sh, int pw, int ph,
-          int pl_w, int pl_h, int pl_sw, int pl_sh, int pl_pw, int pl_ph);
-int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
-          float Gamma, float Beta, float Mean, float Std,
-          int w, int h, int d, int kw, int kh, int sw, int sh,
-          int pw, int ph, int pl_w, int pl_h, int pl_sw, int pl_sh,
-          int pl_pw, int pl_ph);
+void fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
+           float Gamma, float Beta, float Mean, float Std,
+           int w, int h, int d, int kw, int kh, int sw, int sh,
+           int pw, int ph, int pl_w, int pl_h, int pl_sw, int pl_sh,
+           int pl_pw, int pl_ph);
+void bconv(uint8_t* A, uint8_t* F, uint8_t* C, int c_start_idx, int z,
+           float Bias, float Gamma, float Beta, float Mean, float Std,
+           int w, int h, int d, int kw, int kh, int sw, int sh, int pw, int ph,
+           int pl_w, int pl_h, int pl_sw, int pl_sh, int pl_pw, int pl_ph);
 int bdot_3d(uint8_t* A, uint8_t* B, int x, int y, int z, int w, int h,
             int d, int kw, int kh);
 float fdot_3d(float* A, uint8_t* B, int x, int y, int w, int h, int d,
@@ -92,6 +92,11 @@ int conv_idx(int pl_i, int x, int kx, int sx, int px)
 {
   int conv_sz = (x - kx + 2*px)/sx;
   return (pl_i < 0 || pl_i > conv_sz) ? -INT_MAX : pl_i * sx - px;
+}
+
+int convpool_size(int x, int kx, int sx, int px, int pl_x, int pl_sx, int pl_px)
+{
+  return ((x - kx + 2*px)/sx - pl_x + (2*pl_px) + 1)/pl_sx + 1;
 }
 
 /* 2d slice function on binary matrix (bit packed) */
@@ -234,16 +239,19 @@ void fconv_layer(float* A, uint8_t* F, uint8_t* C, float* Bias, float* Gamma,
                  int pw, int ph, int pl_w, int pl_h, int pl_sw, int pl_sh,
                  int pl_pw, int pl_ph)
 {
-  int i, j, res_size, c_idx, a_idx, f_idx;
+  int i, j, res_size, res_w, res_h, c_idx, a_idx, f_idx;
 
   c_idx = 0;
+  res_w = convpool_size(w, kw, sw, pw, pl_w, pl_sw, pl_pw);
+  res_h = convpool_size(h, kh, sh, ph, pl_h, pl_sh, pl_ph);
+  res_size = res_w * res_h;
   for (i = 0; i < m; ++i) {
     for (j = 0; j < num_f; ++j) {
       a_idx = i*w*h*d;
       f_idx = j*(((kw*kh*d)/8)+1);
-      res_size = fconv(A + a_idx, F + f_idx, C, c_idx, Bias[j], Gamma[j],
-                       Beta[j], Mean[j], Std[j], w, h, d, kw, kh, sw, sh, pw, ph,
-                       pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
+      fconv(A + a_idx, F + f_idx, C, c_idx, Bias[j], Gamma[j],
+            Beta[j], Mean[j], Std[j], w, h, d, kw, kh, sw, sh, pw, ph,
+            pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
       c_idx += res_size;
     }
   }
@@ -255,21 +263,22 @@ void bconv_layer(uint8_t* A, uint8_t* F, uint8_t* C, float* Bias, float* Gamma,
                  int pw, int ph, int pl_w, int pl_h, int pl_sw, int pl_sh,
                  int pl_pw, int pl_ph)
 {
-  int i, j, res_size, c_idx,  f_idx;
+  int i, j, res_size, res_w, res_h, c_idx, f_idx;
 
   c_idx = 0;
+  res_w = convpool_size(w, kw, sw, pw, pl_w, pl_sw, pl_pw);
+  res_h = convpool_size(h, kh, sh, ph, pl_h, pl_sh, pl_ph);
+  res_size = res_w * res_h;
   for (i = 0; i < m; ++i) {
     for (j = 0; j < num_f; ++j) {
       f_idx = j*d*(((kw*kh)/8)+1);
-      res_size = bconv(A, F + f_idx, C, c_idx, i, Bias[j], Gamma[j],
-                       Beta[j], Mean[j], Std[j], w, h, d, kw, kh, sw, sh, pw, ph,
-                       pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
+      bconv(A, F + f_idx, C, c_idx, i, Bias[j], Gamma[j],
+            Beta[j], Mean[j], Std[j], w, h, d, kw, kh, sw, sh, pw, ph,
+            pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
       c_idx += res_size;
     }
   }
 }
-
-
 
 /* layer helper functions */
 float BN(float f, float Gamma, float Beta, float Mean, float Std)
@@ -327,46 +336,39 @@ int bdot_3d(uint8_t* A, uint8_t* B, int x, int y, int z, int w, int h,
   return res;
 }
 
-int bconv(uint8_t* A, uint8_t* F, uint8_t* C, int c_start_idx, int z,
-          float Bias, float Gamma, float Beta, float Mean, float Std,
-          int w, int h, int d, int kw, int kh, int sw, int sh, int pw, int ph,
-          int pl_w, int pl_h, int pl_sw, int pl_sh, int pl_pw, int pl_ph)
+/* float convolution + BN */
+/* C_start_idx is the starting index for storing the result */
+void fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
+           float Gamma, float Beta, float Mean, float Std,
+           int w, int h, int d, int kw, int kh, int sw, int sh,
+           int pw, int ph, int pl_w, int pl_h, int pl_sw, int pl_sh,
+           int pl_pw, int pl_ph)
 {
   uint8_t c_mask, res_sign;
-  int pl_i, pl_j, i, j,  c_shift, c_idx, res_size, w_cnt, h_cnt;
+  int pl_i, pl_j, i, j, i_in, j_in, pl_i_max, pl_j_max, c_shift, c_idx;
   float res, max_res;
 
-  /* printf("enter\n"); */
   c_shift = 7 - (c_start_idx % 8);
-  c_mask = 0 | (1 << c_shift);
+  c_mask = 1 << c_shift;
   c_idx = c_start_idx / 8;
-  res_size = 0;
-  for (pl_i = 0; pl_i < (w - kw + 2*pw)/sw - pl_w + (2*pl_pw) + 2; pl_i += pl_sw) {
-  for (pl_j = 0; pl_j < (h - kh + 2*ph)/sh - pl_h + (2*pl_ph) + 2; pl_j += pl_sh) {
-    max_res = -FLT_MAX;
-    w_cnt = 0;
-    for (i = -pl_pw-pw + pl_i * sw; w_cnt < pl_w && i < w + pw - kw + 1; i += sw) {
-    h_cnt = 0;
-    for (j = -pl_ph-ph + pl_j * sh; h_cnt < pl_h && j < h + ph - kh + 1; j += sh) {
-      //pooling padding
-      if (i  < -pw || i > w  || j < -ph || j > h) {
-        res = -FLT_MAX;
+  pl_i_max = (w - kw + 2*pw)/sw + (2*pl_pw) + 1;
+  pl_j_max = (h - kh + 2*ph)/sh + (2*pl_ph) + 1;
+  for (pl_i = -pl_pw; pl_i + pl_w + pl_pw - 1 < pl_i_max; pl_i += pl_sw) {
+  for (pl_j = -pl_ph; pl_j + pl_h + pl_pw - 1 < pl_j_max; pl_j += pl_sh) {
+    max_res = res = -FLT_MAX;
+    for (i_in = pl_i; i_in < pl_i + pl_w; ++i_in) {
+    i = conv_idx(i_in, w, kw, sw, pw);
+    for (j_in = pl_j; j_in < pl_j + pl_h; ++j_in) {
+      j = conv_idx(j_in, h, kh, sh, ph);
+      if (i >= -pw && j >= -ph) {
+        res = fdot_3d(A, F, i, j, w, h, d, kw, kh);
+        max_res = MAX(res, max_res);
       }
-      else {
-        res = bdot_3d(A, F, i, j, z, w, h, d, kw, kh);
-      }
-      /* printf("%d-%d:: %d,%d: %f\n", pl_i, pl_j, i, j, res); */
-      max_res = MAX(res, max_res);
-
-      //Handles pooling stride
-      h_cnt++;
     }
-    w_cnt++;
     }
     max_res += Bias;
     max_res = BN(max_res, Gamma, Beta, Mean, Std);
     res_sign = max_res >= 0 ? 1 : 0;
-    /* printf("%d,%d: %f\n", pl_i, pl_j, max_res); */
 
     /* store result */
     C[c_idx] |= res_sign << c_shift;
@@ -376,11 +378,51 @@ int bconv(uint8_t* A, uint8_t* F, uint8_t* C, int c_start_idx, int z,
     c_idx += (c_mask & 0x80) >> 7;
     c_shift--;
     c_shift =  c_shift < 0 ? 7 : c_shift;
-    res_size++;
   }
   }
+}
 
-  return res_size;
+void bconv(uint8_t* A, uint8_t* F, uint8_t* C, int c_start_idx, int z,
+           float Bias, float Gamma, float Beta, float Mean, float Std,
+           int w, int h, int d, int kw, int kh, int sw, int sh, int pw, int ph,
+           int pl_w, int pl_h, int pl_sw, int pl_sh, int pl_pw, int pl_ph)
+{
+  uint8_t c_mask, res_sign;
+  int pl_i, pl_j, i, j, i_in, j_in, pl_i_max, pl_j_max, c_shift, c_idx;
+  float res, max_res;
+
+  c_shift = 7 - (c_start_idx % 8);
+  c_mask = 1 << c_shift;
+  c_idx = c_start_idx / 8;
+  pl_i_max = (w - kw + 2*pw)/sw + (2*pl_pw) + 1;
+  pl_j_max = (h - kh + 2*ph)/sh + (2*pl_ph) + 1;
+  for (pl_i = -pl_pw; pl_i + pl_w + pl_pw - 1 < pl_i_max; pl_i += pl_sw) {
+  for (pl_j = -pl_ph; pl_j + pl_h + pl_pw - 1 < pl_j_max; pl_j += pl_sh) {
+    max_res = res = -FLT_MAX;
+    for (i_in = pl_i; i_in < pl_i + pl_w; ++i_in) {
+    i = conv_idx(i_in, w, kw, sw, pw);
+    for (j_in = pl_j; j_in < pl_j + pl_h; ++j_in) {
+      j = conv_idx(j_in, h, kh, sh, ph);
+      if (i >= -pw && j >= -ph) {
+        res = bdot_3d(A, F, i, j, z, w, h, d, kw, kh);
+        max_res = MAX(res, max_res);
+      }
+    }
+    }
+    max_res += Bias;
+    max_res = BN(max_res, Gamma, Beta, Mean, Std);
+    res_sign = max_res >= 0 ? 1 : 0;
+
+    /* store result */
+    C[c_idx] |= res_sign << c_shift;
+
+    /* update c_idx */
+    c_mask = rotr1(c_mask);
+    c_idx += (c_mask & 0x80) >> 7;
+    c_shift--;
+    c_shift =  c_shift < 0 ? 7 : c_shift;
+  }
+  }
 }
 
 float fdot_3d(float* A, uint8_t* B, int x, int y, int w, int h, int d,
@@ -415,64 +457,7 @@ float fdot_3d(float* A, uint8_t* B, int x, int y, int w, int h, int d,
   return res;
 }
 
-/* float convolution + BN */
-/* C_start_idx is the starting index for storing the result */
-/* The result is the output size (eventually will change to precompute) */
-int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
-          float Gamma, float Beta, float Mean, float Std,
-          int w, int h, int d, int kw, int kh, int sw, int sh,
-          int pw, int ph, int pl_w, int pl_h, int pl_sw, int pl_sh,
-          int pl_pw, int pl_ph)
-{
-  uint8_t c_mask, res_sign;
-  int pl_i, pl_j, i, j, i_in, j_in, pl_i_max, pl_j_max, c_shift, c_idx, res_size, w_cnt, h_cnt;
-  float res, max_res;
 
-  /* printf("enter\n"); */
-  c_shift = 7 - (c_start_idx % 8);
-  c_mask = 0 | (1 << c_shift);
-  c_idx = c_start_idx / 8;
-  res_size = 0;
-  pl_i_max = (w - kw + 2*pw)/sw + (2*pl_pw) + 1;
-  pl_j_max = (h - kh + 2*ph)/sh + (2*pl_ph) + 1;
-  for (pl_i = -pl_pw; pl_i + pl_w + pl_pw - 1 < pl_i_max; pl_i += pl_sw) {
-  for (pl_j = -pl_ph; pl_j + pl_h + pl_pw - 1 < pl_j_max; pl_j += pl_sh) {
-    /* printf("OUTER: %d,%d\n", pl_i + pl_w, pl_i_max); */
-    max_res = -FLT_MAX;
-    for (i_in = pl_i, w_cnt = 0; w_cnt < pl_w; ++i_in, ++w_cnt) {
-    i = conv_idx(i_in, w, kw, sw, pw);
-    for (j_in = pl_j, h_cnt = 0; h_cnt < pl_h; ++j_in, ++h_cnt) {
-      j = conv_idx(j_in, h, kh, sh, ph);
-      //pooling padding
-      if (i < -pw || j < -ph) {
-        res = -FLT_MAX;
-      }
-      else {
-        res = fdot_3d(A, F, i, j, w, h, d, kw, kh);
-      }
-      printf(" ::%d,%d: %f\n", i, j, res);
-      max_res = MAX(res, max_res);
-    }
-    }
-    max_res += Bias;
-    max_res = BN(max_res, Gamma, Beta, Mean, Std);
-    res_sign = max_res >= 0 ? 1 : 0;
-    printf("%d,%d: %f\n", pl_i, pl_j, max_res);
-
-    /* store result */
-    C[c_idx] |= res_sign << c_shift;
-
-    /* update c_idx */
-    c_mask = rotr1(c_mask);
-    c_idx += (c_mask & 0x80) >> 7;
-    c_shift--;
-    c_shift =  c_shift < 0 ? 7 : c_shift;
-    res_size++;
-  }
-  }
-
-  return res_size;
-}
 
 
 /* Bit functions */
