@@ -6,6 +6,16 @@
 #include <limits.h>
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
+#define BIT8 0x01
+#define BIT7 0x02
+#define BIT6 0x04
+#define BIT5 0x08
+#define BIT4 0x10
+#define BIT3 0x20
+#define BIT2 0x40
+#define BIT1 0x80
+#define BIT8 0x01
+const char bits[8] = {BIT1, BIT2, BIT3, BIT4, BIT5, BIT6, BIT7, BIT8};
 #define MAX_FLT_SIZE 12
 
 
@@ -13,13 +23,14 @@
 int idx_2d(int i, int j, int rows);
 int idx_3d(int i, int j, int k, int rows, int cols);
 int idx_4d(int i, int j, int k, int l, int rows, int cols, int depth);
+int conv_idx(int pl_i, int x, int kx, int sx, int px);
 
-int bslice_2d(uint8_t* dst, uint8_t* src, int x, int y,
+static int bslice_2d(uint8_t* dst, uint8_t* src, int x, int y,
               int w, int h, int kw, int kh);
 int bslice_2d_filter(uint8_t* dst, uint8_t* src, int x, int y,
                      int w, int h, int kw, int kh);
-int bslice_4d(uint8_t* dst, uint8_t* src, int x, int y, int zi, int zj,
-              int w, int h, int d, int kw, int kh);
+int bslice_4d(uint8_t* dst, uint8_t* src, const int x, const int y, const int zi, const int zj,
+              const int w, const int h, const int d, const int kw, const int kh);
 
 /* layer types */
 void blinear_layer(uint8_t* A, uint8_t* F, uint8_t* C, float* Bias, float* Gamma,
@@ -58,7 +69,7 @@ uint32_t rotr1 (uint32_t x);
 int popcnt(uint32_t v);
 int popcnt8(uint8_t v);
 int nthbitset(uint8_t num, int bit);
-int nthbitset_arr(uint8_t *num, int bit);
+int nthbitset_arr(uint8_t *num, const int bit);
 
 
 /* index functions */
@@ -77,10 +88,15 @@ int idx_4d(int i, int j, int k, int l, int rows, int cols, int depth)
   return i * rows * cols * depth + j * cols * depth + k * depth + l;
 }
 
+int conv_idx(int pl_i, int x, int kx, int sx, int px)
+{
+  int conv_sz = (x - kx + 2*px)/sx;
+  return (pl_i < 0 || pl_i > conv_sz) ? -INT_MAX : pl_i * sx - px;
+}
 
 /* 2d slice function on binary matrix (bit packed) */
-int bslice_2d(uint8_t* dst, uint8_t* src, int x, int y,
-              int w, int h, int kw, int kh)
+static int bslice_2d(uint8_t* dst, uint8_t* src, int x, int y,
+                     int w, int h, int kw, int kh)
 {
   int i, j, n, idx, shift, bytes;
   uint8_t mask, bitset;
@@ -152,8 +168,8 @@ int bslice_2d_filter(uint8_t* dst, uint8_t* src, int x, int y,
 }
 
 /* 4d slice function on binary matrix (bit packed) */
-int bslice_4d(uint8_t* dst, uint8_t* src, int x, int y, int zi, int zj,
-              int w, int h, int d, int kw, int kh)
+int bslice_4d(uint8_t* dst, uint8_t* src, const int x, const int y, const int zi, const int zj,
+              const int w, const int h, const int d, const int kw, const int kh)
 {
   int i, j, n, idx, shift, bytes, bitset;
   uint8_t mask;
@@ -409,7 +425,7 @@ int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
           int pl_pw, int pl_ph)
 {
   uint8_t c_mask, res_sign;
-  int pl_i, pl_j, i, j,  c_shift, c_idx, res_size, w_cnt, h_cnt;
+  int pl_i, pl_j, i, j, i_in, j_in, pl_i_max, pl_j_max, c_shift, c_idx, res_size, w_cnt, h_cnt;
   float res, max_res;
 
   /* printf("enter\n"); */
@@ -417,32 +433,31 @@ int fconv(float* A, uint8_t* F, uint8_t* C, int c_start_idx, float Bias,
   c_mask = 0 | (1 << c_shift);
   c_idx = c_start_idx / 8;
   res_size = 0;
-  for (pl_i = 0; pl_i < (w - kw + 2*pw)/sw - pl_w + (2*pl_pw) + 2; pl_i += pl_sw) {
-  for (pl_j = 0; pl_j < (h - kh + 2*ph)/sh - pl_h + (2*pl_ph) + 2; pl_j += pl_sh) {
+  pl_i_max = (w - kw + 2*pw)/sw + (2*pl_pw) + 1;
+  pl_j_max = (h - kh + 2*ph)/sh + (2*pl_ph) + 1;
+  for (pl_i = -pl_pw; pl_i + pl_w + pl_pw - 1 < pl_i_max; pl_i += pl_sw) {
+  for (pl_j = -pl_ph; pl_j + pl_h + pl_pw - 1 < pl_j_max; pl_j += pl_sh) {
+    /* printf("OUTER: %d,%d\n", pl_i + pl_w, pl_i_max); */
     max_res = -FLT_MAX;
-    w_cnt = 0;
-    for (i = -pl_pw-pw + pl_i * sw; w_cnt < pl_w && i < w + pw - kw + 1; i += sw) {
-    h_cnt = 0;
-    for (j = -pl_ph-ph + pl_j * sh; h_cnt < pl_h && j < h + ph - kh + 1; j += sh) {
+    for (i_in = pl_i, w_cnt = 0; w_cnt < pl_w; ++i_in, ++w_cnt) {
+    i = conv_idx(i_in, w, kw, sw, pw);
+    for (j_in = pl_j, h_cnt = 0; h_cnt < pl_h; ++j_in, ++h_cnt) {
+      j = conv_idx(j_in, h, kh, sh, ph);
       //pooling padding
-      if (i  < -pw || i > w  || j < -ph || j > h) {
+      if (i < -pw || j < -ph) {
         res = -FLT_MAX;
       }
       else {
         res = fdot_3d(A, F, i, j, w, h, d, kw, kh);
       }
-      /* printf("%d-%d:: %d,%d: %f\n", pl_i, pl_j, i, j, res); */
+      printf(" ::%d,%d: %f\n", i, j, res);
       max_res = MAX(res, max_res);
-
-      //Handles pooling stride
-      h_cnt++;
     }
-    w_cnt++;
     }
     max_res += Bias;
     max_res = BN(max_res, Gamma, Beta, Mean, Std);
     res_sign = max_res >= 0 ? 1 : 0;
-    /* printf("%d,%d: %f\n", pl_i, pl_j, max_res); */
+    printf("%d,%d: %f\n", pl_i, pl_j, max_res);
 
     /* store result */
     C[c_idx] |= res_sign << c_shift;
@@ -477,10 +492,9 @@ int nthbitset(uint8_t x, int n)
   return x & (1 << n) ? 1 : 0;
 }
 
-int nthbitset_arr(uint8_t *arr, int n)
+int nthbitset_arr(uint8_t *arr, const int n)
 {
-  uint8_t x = arr[n/8];
-  return x & (1 << (7-(n%8))) ? 1 : 0;
+  return arr[n/8] & bits[n&7] ? 1 : 0;
 }
 
 int popcnt(uint32_t v) {
