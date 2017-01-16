@@ -315,7 +315,7 @@ class Sequential(object):
         link_idx = 0
         text = ""
 
-        text += "void compute(float *input, uint8_t *output){\n"
+        text += "void ebnn_compute(float *input, uint8_t *output){\n"
 
         l = self.links[0]
         text += "  {name}(input, temp1);\n".format(name=l.cname + str(link_idx))
@@ -401,7 +401,7 @@ class Sequential(object):
         else:
             inp = "0"
         text = """
-#include "util.h"
+#include "ebnn.h"
 """
         h = np.random.random([1]+list(shape)).astype(np.float32)
 

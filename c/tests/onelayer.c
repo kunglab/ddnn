@@ -40,7 +40,7 @@ static char* test_endtoend() {
   char output_msg[] = "Output Mismatch: Layer 3.\nComputed: %d, Actual: %d\n";
   uint8_t output[1];
 
-  compute(x_in, output);
+  ebnn_compute(x_in, output);
 
   sprintf(output_buf, output_msg, output[0], 7);
   mu_assert(output_buf,  output[0] == 7);

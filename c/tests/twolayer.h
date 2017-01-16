@@ -1,5 +1,4 @@
-
-#include "util.h"
+#include "../ebnn.h"
 uint8_t l_conv_pool_bn_bst0_bconv_W[4] = {17,127,94,127};
 float l_conv_pool_bn_bst0_bconv_b[2] = {-0.0058961543,0.005744196};
 float l_conv_pool_bn_bst0_bn_gamma[2] = {1.0009999,0.82154155};
@@ -27,13 +26,13 @@ float l_b_linear_bn_softmax2_bn_beta[10] = {-0.034081127,0.019167693,0.01857039,
 float l_b_linear_bn_softmax2_bn_mean[10] = {76.321053,18.250515,40.425751,-34.31781,54.566586,13.393117,-20.267597,-30.648325,37.658245,40.055397};
 float l_b_linear_bn_softmax2_bn_std[10] = {72.164726,71.086914,72.790321,68.775742,67.462059,56.947086,69.349663,65.214142,60.630417,59.372597};
 void l_b_linear_bn_softmax2(uint8_t* input, uint8_t* output){
-  blinear_layer(input, l_b_linear_bn_softmax2_bl_W, output, l_b_linear_bn_softmax2_bl_b, l_b_linear_bn_softmax2_bn_gamma, l_b_linear_bn_softmax2_bn_beta, l_b_linear_bn_softmax2_bn_mean, l_b_linear_bn_softmax2_bn_std, 1, 1568, 10); 
+  blinear_layer(input, l_b_linear_bn_softmax2_bl_W, output, l_b_linear_bn_softmax2_bl_b, l_b_linear_bn_softmax2_bn_gamma, l_b_linear_bn_softmax2_bn_beta, l_b_linear_bn_softmax2_bn_mean, l_b_linear_bn_softmax2_bn_std, 1, 1568, 10);
 }
 
 
 uint8_t temp1[208] = {0};
 uint8_t temp2[208] = {0};
-void compute(float *input, uint8_t *output){
+void ebnn_compute(float *input, uint8_t *output){
   l_conv_pool_bn_bst0(input, temp1);
   l_b_conv_pool_bn_bst1(temp1, temp2);
   l_b_linear_bn_softmax2(temp2, output);

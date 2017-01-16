@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <math.h>
-#include "../util.h"
+#include "../ebnn.h"
 #include "minunit.h"
 #include "unit_compare.h"
 #define W 28

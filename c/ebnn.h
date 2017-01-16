@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef EBNN_H
+#define EBNN_H
 
 #include <stdio.h>
 #include <stdint.h>
@@ -531,4 +531,4 @@ static int bslice_4d(uint8_t* const dst, const uint8_t* const src, const int x,
   return n;
 }
 
-#endif /*UTIL_H*/
+#endif /*EBNN_H*/
