@@ -1104,6 +1104,53 @@ static char* test_fconv_layer_11 () {
   return 0;
 }
 
+static char* test_fconv_layer_12 () {
+  float A_in[36] = {-0.56463647,-0.29729176,-0.42165029,-0.21281511,-0.14583987,-0.65500516,-0.71884739,-0.275392,-0.85040152,-0.24986833,-0.55124295,-0.65826952,-0.58335054,-0.25083023,-0.18527454,-0.44041735,-0.0060428381,-0.34078628,-0.47037348,-0.37082875,-0.77611804,-0.21166229,-0.70595747,-0.3613503,-0.13939512,-0.44365406,-0.29199547,-0.13939166,-0.66095078,-0.39832067,-0.80822074,-0.55792636,-0.67169166,-0.38358527,-0.7747916,-0.2148596};
+  uint8_t F_in[4] = {249,255,152,127};
+  uint8_t C_actual[9] = {0,0,0,0,15,255,255,255,255};
+  uint8_t C_comp[9] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: fconv_layer_12[Conv(stride=1) + Pooling(stride=1)]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i;
+
+  int m = 1;
+  int w = 6;
+  int h = 6;
+  int d = 1;
+  int kw = 3;
+  int kh = 3;
+  int sw = 1;
+  int sh = 1;
+  int pw = 1;
+  int ph = 1;
+  int pl_w = 3;
+  int pl_h = 3;
+  int pl_sw = 1;
+  int pl_sh = 1;
+  int pl_pw = 1;
+  int pl_ph = 1;
+
+  int num_f = 2;
+  float Bias[2] = {0.0, 0.0};
+  float Gamma[2] = {1.0, 1.0};
+  float Beta[2] = {0.0, 0.0};
+  float Mean[2] = {0.0, 0.0};
+  float Std[2] = {1.0, 1.0};
+
+  fconv_layer(A_in, F_in, C_comp, Bias, Gamma, Beta, Mean, Std, m, num_f,
+              w, h, d, kw, kh, sw, sh, pw, ph,
+              pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
+
+  for (i = 0; i < 72; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
+
 static char* test_bconv_layer_1 () {
   uint8_t A_in[13] = {208,40,250,231,111,235,200,200,19,101,206,21,112};
   uint8_t F_in[8] = {233,127,191,127,236,255,78,127};
@@ -1387,7 +1434,7 @@ static char* test_bconv_layer_7 () {
   uint8_t C_actual[8] = {63,247,255,255,255,255,119,119};
   uint8_t C_comp[18] = {0};
   uint8_t comp, actual;
-  char output_msg[] = "\nTEST: bconv_layer_6[Conv (Stride=2), Pooling (Padding=1, Stride=1)]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  char output_msg[] = "\nTEST: bconv_layer_7[Conv (Stride=2), Pooling (Padding=1, Stride=1)]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
   int i;
 
   int m = 2;
@@ -1418,6 +1465,52 @@ static char* test_bconv_layer_7 () {
               pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
 
   for (i = 0; i < 64; ++i) {
+    actual = nthbitset_arr(C_actual, i);
+    comp = nthbitset_arr(C_comp, i);
+    sprintf(output_buf, output_msg, i, comp, i, actual);
+    mu_assert(output_buf, comp == actual);
+  }
+
+  return 0;
+}
+
+static char* test_bconv_layer_8 () {
+  uint8_t A_in[9] = {4,0,5,16,0,18,128,64,0};
+  uint8_t F_in[8] = {217,127,93,255,72,255,2,127};
+  uint8_t C_actual[9] = {195,143,190,56,239,255,255,255,255};
+  uint8_t C_comp[9] = {0};
+  uint8_t comp, actual;
+  char output_msg[] = "\nTEST: bconv_layer_8[Conv (Stride=1), Pooling (Padding=1, Stride=1)]\nOutput Mismatch: \nComputed[%d]=%d, Actual[%d]=%d\n";
+  int i;
+
+  int m = 1;
+  int d = 2;
+  int w = 6;
+  int h = 6;
+  int num_f = 2;
+  int kw = 3;
+  int kh = 3;
+  int sw = 1;
+  int sh = 1;
+  int pw = 1;
+  int ph = 1;
+  int pl_w = 3;
+  int pl_h = 3;
+  int pl_sw = 1;
+  int pl_sh = 1;
+  int pl_pw = 1;
+  int pl_ph = 1;
+  float Bias[2] = {0.0, 0.0};
+  float Gamma[2] = {1.0, 1.0};
+  float Beta[2] = {0.0, 0.0};
+  float Mean[2] = {0.0, 0.0};
+  float Std[2] = {1.0, 1.0};
+
+  bconv_layer(A_in, F_in, C_comp, Bias, Gamma, Beta, Mean, Std, m, num_f,
+              w, h, d, kw, kh, sw, sh, pw, ph,
+              pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
+
+  for (i = 0; i < 72; ++i) {
     actual = nthbitset_arr(C_actual, i);
     comp = nthbitset_arr(C_comp, i);
     sprintf(output_buf, output_msg, i, comp, i, actual);
@@ -1495,6 +1588,7 @@ static char* all_tests()
   mu_run_test(test_fconv_layer_9);
   mu_run_test(test_fconv_layer_10);
   mu_run_test(test_fconv_layer_11);
+  mu_run_test(test_fconv_layer_12);
   mu_run_test(test_bconv_layer_1);
   mu_run_test(test_bconv_layer_2);
   mu_run_test(test_bconv_layer_3);
@@ -1502,6 +1596,7 @@ static char* all_tests()
   mu_run_test(test_bconv_layer_5);
   mu_run_test(test_bconv_layer_6);
   /* mu_run_test(test_bconv_layer_7); */
+  mu_run_test(test_bconv_layer_8);
   mu_run_test(test_blinear_layer_1);
   return 0;
 }

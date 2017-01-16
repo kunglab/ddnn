@@ -39,11 +39,13 @@ class ConvPoolBNBST(chainer.Chain, CLink):
         name = self.cname + str(link_idx)
         text = []
         m = 1
+        w, h = inp_shape[2:4]
         sw, sh = self.bconv.stride
         pw, ph = self.bconv.pad
-        pl_k = self.pksize
-        pl_s = self.pool.stride
-        pl_p = self.ppad
+        pl_w, pl_h = self.pksize, self.pksize
+        pl_sw, pl_sh = self.pool.stride, self.pool.stride
+        pl_pw, pl_ph = self.ppad, self.ppad
+
 
         # Bconv
         l = self.bconv
@@ -52,7 +54,6 @@ class ConvPoolBNBST(chainer.Chain, CLink):
             pname = p.name
             if pname == 'W':
                 num_f, n, kw, kh =  p.data.shape
-                #print("num_f",num_f,p.data.shape)
                 bin_data = bu.binarize_real(p.data).reshape(p.data.shape[0], -1)
                 text += [bu.np_to_uint8C(bin_data, lname+'_'+pname, 'row_major', pad='1')]
             elif pname == 'b':
@@ -78,10 +79,13 @@ class ConvPoolBNBST(chainer.Chain, CLink):
 
         text = "\n".join(text) + "\n"
         ftext = "void {name}(float* input, uint8_t* output){{\n"
-        ftext += "  fconv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {num_f}, {w}, {h}, {n}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {pl_k}, {pl_k}, {pl_s}, {pl_s}, {pl_p}, {pl_p});\n}}\n\n"
-        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw, kh=kh, sw=sw, sh=sh, pw=pw, ph=ph,
-                             pl_k=pl_k, pl_s=pl_s, pl_p=pl_p)
+        ftext += "  fconv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {num_f}, {w}, {h}, {n}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {pl_w}, {pl_h}, {pl_sw}, {pl_sh}, {pl_pw}, {pl_ph});\n}}\n\n"
+        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw,
+                             kh=kh, sw=sw, sh=sh, pw=pw, ph=ph, pl_w=pl_w,
+                             pl_h=pl_h, pl_sw=pl_sw, pl_sh=pl_sh, pl_pw=pl_pw,
+                             pl_ph=pl_ph)
         text += ftext
+
 
         return text
 

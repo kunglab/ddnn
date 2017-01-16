@@ -315,7 +315,7 @@ class Sequential(object):
         link_idx = 0
         text = ""
 
-        text += "void compute(){\n"
+        text += "void compute(float *input, uint8_t *output){\n"
 
         l = self.links[0]
         text += "  {name}(input, temp1);\n".format(name=l.cname + str(link_idx))
@@ -422,11 +422,8 @@ class Sequential(object):
         inter_size = int(np.max(inter_sizes))
 
         text += """
-char name[] = "{name}";
-float input[{input_size}] = {{{inp}}};
-uint8_t output[1] = {{0}};
-uint8_t temp1[{inter_size}] = {{0}}; // Allocate large enough
-uint8_t temp2[{inter_size}] = {{0}}; // Allocate large enough
+uint8_t temp1[{inter_size}] = {{0}};
+uint8_t temp2[{inter_size}] = {{0}};
 """.format(name=name,input_size=input_size,inter_size=inter_size,inp=inp)
 
         text += self.generate_call()

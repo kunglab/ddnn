@@ -20,18 +20,13 @@ class BinaryConvPoolBNBST(chainer.Chain, CLink):
             bst=BST()
         )
         self.cname = "l_b_conv_pool_bn_bst"
+        self.pksize = pksize
+        self.ppad = ppad
 
     def __call__(self, h, test=False):
-        #self.inp_shape = h.data.shape
         h = self.bconv(h)
-        #print h.data.shape
-        #print h.data
         h = self.pool(h)
-        #print h.data.shape
-        #print h.data
         h = self.bn(h, test)
-        #print h.data.shape
-        #print h.data
         h = self.bst(h)
         return h
 
@@ -39,13 +34,15 @@ class BinaryConvPoolBNBST(chainer.Chain, CLink):
         #if not hasattr(self,'inp_shape'):
         #    raise Exception("no input shape found")
         #    return ""
-        w, h = inp_shape[2:4]
         name = self.cname + str(link_idx)
         text = []
         m = 1
+        w, h = inp_shape[2:4]
         sw, sh = self.bconv.stride
-        pw, ph = self.pool.kern, self.pool.kern
-        ps = self.pool.stride
+        pw, ph = self.bconv.pad
+        pl_w, pl_h = self.pksize, self.pksize
+        pl_sw, pl_sh = self.pool.stride, self.pool.stride
+        pl_pw, pl_ph = self.ppad, self.ppad
 
         # Bconv
         l = self.bconv
@@ -79,9 +76,13 @@ class BinaryConvPoolBNBST(chainer.Chain, CLink):
 
         text = "\n".join(text)+'\n'
         ftext = "void {name}(uint8_t* input, uint8_t* output){{\n"
-        ftext += "  fused_conv_pool_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {n}, {w}, {h}, {num_f}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {ps});\n}}\n\n"
-        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw, kh=kh, sw=sw, sh=sh, pw=pw, ph=ph, ps=ps)
+        ftext += "  bconv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {num_f}, {w}, {h}, {n}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {pl_w}, {pl_h}, {pl_sw}, {pl_sh}, {pl_pw}, {pl_ph});\n}}\n\n"
+        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw,
+                             kh=kh, sw=sw, sh=sh, pw=pw, ph=ph, pl_w=pl_w,
+                             pl_h=pl_h, pl_sw=pl_sw, pl_sh=pl_sh, pl_pw=pl_pw,
+                             pl_ph=pl_ph)
         text += ftext
+
 
         return text
 

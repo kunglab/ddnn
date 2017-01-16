@@ -8,6 +8,7 @@
 
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
+#define CEIL_POS(X) ((X-(int)(X)) > 0 ? (int)(X+1) : (int)(X))
 #define MAX_FILTER_BYTES 12
 static const uint8_t bits[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
 
@@ -125,16 +126,23 @@ static void fconv_layer(const float* A, const uint8_t* F, uint8_t* C,
                         const int pl_h, const int pl_sw, const int pl_sh,
                         const int pl_pw, const int pl_ph)
 {
-  int i, j, res_size, res_w, res_h, c_idx, a_idx, f_idx;
+  int i, j, max_m, res_size, res_w, res_h, c_idx, a_idx, f_idx;
 
   c_idx = 0;
   res_w = convpool_size(w, kw, sw, pw, pl_w, pl_sw, pl_pw);
   res_h = convpool_size(h, kh, sh, ph, pl_h, pl_sh, pl_ph);
   res_size = res_w * res_h;
+  max_m = CEIL_POS(res_size*m*num_f/8.0);
+
+  /* initialize result */
+  for (i = 0; i < max_m; ++i) {
+    C[i] = 0;
+  }
+
   for (i = 0; i < m; ++i) {
     for (j = 0; j < num_f; ++j) {
       a_idx = i*w*h*d;
-      f_idx = j*(((kw*kh*d)/8)+1);
+      f_idx = j*CEIL_POS(kw*kh*d/8.0);
       fconv(A + a_idx, F + f_idx, C, c_idx, Bias[j], Gamma[j],
             Beta[j], Mean[j], Std[j], w, h, d, kw, kh, sw, sh, pw, ph,
             pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
@@ -152,15 +160,23 @@ static void bconv_layer(const uint8_t* A, const uint8_t* F, uint8_t* C,
                         const int pl_h, const int pl_sw, const int pl_sh,
                         const int pl_pw, const int pl_ph)
 {
-  int i, j, res_size, res_w, res_h, c_idx, f_idx;
+  int i, j, max_m, res_size, res_w, res_h, c_idx, f_idx;
+
 
   c_idx = 0;
   res_w = convpool_size(w, kw, sw, pw, pl_w, pl_sw, pl_pw);
   res_h = convpool_size(h, kh, sh, ph, pl_h, pl_sh, pl_ph);
   res_size = res_w * res_h;
+  max_m = CEIL_POS(res_size*m*num_f/8.0);
+
+  /* initialize result */
+  for (i = 0; i < max_m; ++i) {
+    C[i] = 0;
+  }
+
   for (i = 0; i < m; ++i) {
     for (j = 0; j < num_f; ++j) {
-      f_idx = j*d*(((kw*kh)/8)+1);
+      f_idx = j*d*CEIL_POS(kw*kh/8.0);
       bconv(A, F + f_idx, C, c_idx, i, Bias[j], Gamma[j],
             Beta[j], Mean[j], Std[j], w, h, d, kw, kh, sw, sh, pw, ph,
             pl_w, pl_h, pl_sw, pl_sh, pl_pw, pl_ph);
@@ -184,7 +200,7 @@ static int bdot(const uint8_t* A, const uint8_t* B, const int N)
 {
   int i, num_bytes, res;
 
-  num_bytes = (N/8) + 1;
+  num_bytes = CEIL_POS(N/8.0);
   res = 0;
   for (i = 0; i < num_bytes; ++i) {
     res += popcnt8(~(A[i]^B[i]));
@@ -204,7 +220,7 @@ static int bdot_3d(const uint8_t* A, const uint8_t* B, const int x, const int y,
   int i, comp_n, res, N, B_bytes, bx, by, bw, bh;
 
   N = kw*kh;
-  B_bytes = (kw*kh)/8 + 1;
+  B_bytes = CEIL_POS(kw*kh/8.0);
   res = 0;
   for (i = 0; i < d; ++i) {
     B_idx = B + B_bytes*i;
@@ -413,7 +429,7 @@ static int bslice_2d(uint8_t* const dst, const uint8_t* const src, const int x,
   uint8_t mask, bitset;
 
   /* initiaize dst */
-  bytes = (kw*kh/8)+1;
+  bytes = CEIL_POS(kw*kh/8.0);
   for (i = 0; i < bytes; ++i) {
     dst[i] = 0;
   }
@@ -450,7 +466,7 @@ static int bslice_2d_filter(uint8_t* const dst, const uint8_t* const src,
   uint8_t mask;
 
   /* initiaize dst */
-  bytes = (kw*kh/8)+1;
+  bytes = CEIL_POS(kw*kh/8.0);
   for (i = 0; i < bytes; ++i) {
     dst[i] = 0xFF;
   }
@@ -488,7 +504,7 @@ static int bslice_4d(uint8_t* const dst, const uint8_t* const src, const int x,
   uint8_t mask;
 
   /* initialize dest */
-  bytes = (kw*kh/8)+1;
+  bytes = CEIL_POS(kw*kh/8.0);
   for (i = 0; i < bytes; ++i) {
     dst[i] = 0;
   }

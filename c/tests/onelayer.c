@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "minunit.h"
-#include "simple.h"
-#include "simple_compare.h"
+#include "onelayer.h"
+#include "onelayer_compare.h"
 
 int tests_run = 0;
 char output_buf[1000];
@@ -10,11 +10,10 @@ int errors = 0;
 static char* test_l1() {
   char output_msg[] = "Output Mismatch: Layer 1.\nComputed[%d]=%d, Actual[%d]=%d\n";
   int i;
-  for (i = 0; i < 784; ++i) input[i] = x_in[i];
 
-  l_conv_bn_bst0(input, temp1);
+  l_conv_pool_bn_bst0(x_in, temp1);
 
-  for (i = 0; i < 224; ++i) {
+  for (i = 0; i < 196; ++i) {
     sprintf(output_buf, output_msg, i, temp1[i], i, inter1[i]);
     mu_assert(output_buf, temp1[i] == inter1[i]);
   }
@@ -24,22 +23,35 @@ static char* test_l1() {
 
 static char* test_l2() {
   char output_msg[] = "Output Mismatch: Layer 2.\nComputed: %d, Actual: %d\n";
+  uint8_t output[1];
 
   blinear_layer(inter1, l_b_linear_bn_softmax1_bl_W, output,
                 l_b_linear_bn_softmax1_bl_b, l_b_linear_bn_softmax1_bn_gamma,
                 l_b_linear_bn_softmax1_bn_beta, l_b_linear_bn_softmax1_bn_mean,
                 l_b_linear_bn_softmax1_bn_std, 1, 1568, 10);
 
-  sprintf(output_buf, output_msg, output[0], 3);
-  mu_assert(output_buf,  output[0] == 3);
+  sprintf(output_buf, output_msg, output[0], 7);
+  mu_assert(output_buf,  output[0] == 7);
 
   return 0;
 }
 
+static char* test_endtoend() {
+  char output_msg[] = "Output Mismatch: Layer 3.\nComputed: %d, Actual: %d\n";
+  uint8_t output[1];
+
+  compute(x_in, output);
+
+  sprintf(output_buf, output_msg, output[0], 7);
+  mu_assert(output_buf,  output[0] == 7);
+
+  return 0;
+}
 
 static char* all_tests() {
   mu_run_test(test_l1);
   mu_run_test(test_l2);
+  mu_run_test(test_endtoend);
   return 0;
 }
 
