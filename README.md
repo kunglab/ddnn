@@ -51,16 +51,25 @@ data_shape = train._datasets[0].shape[1:]
 trainer.generate_c(out_c_file, data_shape)
 ```
 
-This will generate simple_convpool.h file which can be included in C/Arduino code. This generated file include a common file called util.h located in the c folder of this repo. These two files should be included in the C/Arduino code. To use this library in C/Arduino code, write an input in a variable named *input*, then call a function named *compute()* and read a variable named *output* for result. For example,
+This will generate simple_convpool.h file which, requires the ebnn.h file located in the c folder. These two files should be included in the C/Arduino code. The library is used as follows: 
 
 ```c
+#include <stdio.h>
+#include <stdint.h>
 #include "simple_convpool.h"
-for(int i=0;i<784;i++){
+float input[28*28];
+uint8_t output[1];
+
+//simulate a 28 by 28 greyscale image
+for(int i=0; i < 28*28; ++i) {
     input[i] = i
 }
-compute()
-println("%d",output[0]);
+
+ebnn_compute(input, output);
+printf("%d\n", output[0]);
 ```
+
+For examples of generated networks, see the c/tests folder.
 
 ## Paper
 
