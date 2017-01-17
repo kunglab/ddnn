@@ -60,7 +60,8 @@ This will generate the simple_convpool.h header file which requires the ebnn.h f
 #include <stdint.h>
 #include "simple_convpool.h"
 
-int main() {
+int main()
+{
   float input[28*28];
   uint8_t output[1];
    
@@ -76,7 +77,7 @@ int main() {
 }
 ```
 
-For examples of generated networks, see the c/tests folder.
+For examples of generated networks, see the [c/tests](https://gitlab.com/htkung/ddnn/tree/master/c/tests) folder.
 
 ## Paper
 
