@@ -13,6 +13,8 @@ pip install chainer
 ```
 
 ## Quick Start
+This library has two components: a python module that trains the eBNN and generates a C header file, and the C library which uses the generated header file and is compiled on the target device to perform inference. A quick example of how the python module can be used to train a network is shown below.
+
 ```python
 import os
 import sys
@@ -51,22 +53,27 @@ data_shape = train._datasets[0].shape[1:]
 trainer.generate_c(out_c_file, data_shape)
 ```
 
-This will generate simple_convpool.h file which, requires the ebnn.h file located in the c folder. These two files should be included in the C/Arduino code. The library is used as follows: 
+This will generate the simple_convpool.h header file which requires the ebnn.h file located in the c folder. These two files should be included in the C/Arduino code. The C library is used as follows: 
 
 ```c
 #include <stdio.h>
 #include <stdint.h>
 #include "simple_convpool.h"
-float input[28*28];
-uint8_t output[1];
 
-//simulate a 28 by 28 greyscale image
-for(int i=0; i < 28*28; ++i) {
+int main() {
+  float input[28*28];
+  uint8_t output[1];
+   
+  //simulate a 28 by 28 greyscale image
+  for(int i=0; i < 28*28; ++i) {
     input[i] = i
+  }
+    
+  ebnn_compute(input, output);
+  printf("%d\n", output[0]);
+   
+  return 0;
 }
-
-ebnn_compute(input, output);
-printf("%d\n", output[0]);
 ```
 
 For examples of generated networks, see the c/tests folder.
