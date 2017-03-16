@@ -151,6 +151,26 @@ class tanh(Function):
     def __call__(self, x):
         return F.tanh(x, self.use_cudnn)
 
+class dropout_comm_test(Function):
+    def __init__(self, ratio=0.5):
+        self._function = "dropout_comm_test"
+        self.ratio = ratio
+
+    def __call__(self, x, train=True):
+        if not train:
+            return F.dropout(x, self.ratio, True)
+        return x
+    
+class dropout_comm_train(Function):
+    def __init__(self, ratio=0.5):
+        self._function = "dropout_comm_train"
+        self.ratio = ratio
+
+    def __call__(self, x, train=True):
+        if train:
+            return F.dropout(x, self.ratio, True)
+        return x
+
 class dropout(Function):
     def __init__(self, ratio=0.5):
         self._function = "dropout"

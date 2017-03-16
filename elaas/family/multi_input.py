@@ -10,13 +10,14 @@ from chainer_sequential.binary_link import *
 from chainer import functions as F
 
 class MultiInputFamily:
-    def __init__(self, folder="_models/multi_input", prefix=None, input_dims=3, output_dims=3, batchsize=10, ninputs=2):
+    def __init__(self, folder="_models/multi_input", prefix=None, input_dims=3, output_dims=3, batchsize=10, ninputs=2, resume=True):
         self.ninputs = ninputs
         self.folder = folder
         self.prefix = prefix
         self.input_dims = input_dims
         self.output_dims = output_dims
         self.batchsize = batchsize
+        self.resume = resume
 
     def get_configurable_params(self):
         return ["nfilters_embeded", "nlayers_embeded", "nfilters_cloud", "nlayers_cloud", "branchweight", "lr", "ent_T"]
@@ -110,7 +111,7 @@ class MultiInputFamily:
          'validation/main/branch7accuracy'
         ]
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
-                          testset, batchsize=self.batchsize, nepoch=nepochs, resume=True, reports=reports)
+                          testset, batchsize=self.batchsize, nepoch=nepochs, resume=self.resume, reports=reports)
         trainer.run()
         
         return trainer, model

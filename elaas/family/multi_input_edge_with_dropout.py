@@ -9,8 +9,8 @@ from chainer_sequential.link import *
 from chainer_sequential.binary_link import *
 from chainer import functions as F
 
-class MultiInputEdgeFamily:
-    def __init__(self, folder="_models/multi_input", prefix=None, input_dims=3, output_dims=3, batchsize=10, ninputs=2, merge_function="max_pool_concat", resume=True):
+class MultiInputEdgeDropoutFamily:
+    def __init__(self, folder="_models/multi_input_edge", prefix=None, input_dims=3, output_dims=3, batchsize=10, ninputs=2, merge_function="max_pool_concat", resume=True, drop_comm_train=0, drop_comm_test=0):
         self.ninputs = ninputs
         self.folder = folder
         self.prefix = prefix
@@ -19,6 +19,8 @@ class MultiInputEdgeFamily:
         self.batchsize = batchsize
         self.merge_function = merge_function
         self.resume = resume
+        self.drop_comm_train = drop_comm_train
+        self.drop_comm_test = drop_comm_test
 
     def get_configurable_params(self):
         return ["nfilters_embeded", "nlayers_embeded", "nfilters_embeded_last", "nfilters_cloud", "nlayers_cloud", "branchweight", "lr", "ent_T"]
@@ -92,6 +94,12 @@ class MultiInputEdgeFamily:
                     nfilters = self.ninputs*nfilters_embeded_last
                 else:
                     nfilters = nfilters_embeded_last
+                if self.drop_comm_train>0:
+                    print("self.drop_comm_train", self.drop_comm_train)
+                    model.add(dropout_comm_train(self.drop_comm_train))
+                if self.drop_comm_test>0:
+                    print("self.drop_comm_test", self.drop_comm_test)
+                    model.add(dropout_comm_test(self.drop_comm_test))
             else:
                 nfilters = nfilters_cloud
             model.add(BinaryConvPoolBNBST(nfilters, nfilters_cloud, 3, 1, 1, 3, 1, 1))
@@ -128,7 +136,7 @@ class MultiInputEdgeFamily:
 
         chain = MultiInputChain(branchweight=branchweight, ent_T=ent_T)
         chain.add_sequence(model)
-        chain.setup_optimizers('adam', lr)
+        chain.setup_optimizers('smorms3', lr)
         return chain, model
 
     def get_name(self, **kwargs):

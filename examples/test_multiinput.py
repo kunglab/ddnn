@@ -29,7 +29,7 @@ parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('-n', '--ncams', type=int,  default=6)
 args = parser.parse_args()
 
-mnist = Collection('multiinput_{}'.format(args.ncams), args.save_dir, input_dims=3, nepochs=args.epochs, verbose=args.verbose)
+mnist = Collection('multiinput_{}'.format(args.ncams), args.save_dir, nepochs=args.epochs, verbose=args.verbose)
 
 ncams = args.ncams
 mnist.set_model_family(MultiInputFamily,ninputs=ncams)
