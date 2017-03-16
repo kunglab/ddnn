@@ -11,14 +11,13 @@ from ..links import BST
 from ..utils import binary_util as bu
 
 class BinaryConvBNBST(chainer.Chain, CLink):
-    def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0, flat_output=False):
+    def __init__(self, in_channels, out_channels, ksize=3, stride=1, pad=0):
         super(BinaryConvBNBST, self).__init__(
             bconv=BinaryConvolution2D(in_channels, out_channels, ksize=ksize, stride=stride, pad=pad),
             bn=BatchNormalization(out_channels),
             bst=BST()
         )
         self.cname = "l_b_conv_bn_bst"
-        self.flat_output = flat_output
 
     def __call__(self, h, test=False):
         #self.inp_shape = h.data.shape
@@ -35,10 +34,9 @@ class BinaryConvBNBST(chainer.Chain, CLink):
         m = 1
         sw, sh = self.bconv.stride
         pw, ph = self.bconv.pad
-        if self.flat_output:
-            fo = 1
-        else:
-            fo = 0
+        pl_w, pl_h = 1, 1
+        pl_sw, pl_sh = 1, 1
+        pl_pw, pl_ph = 0, 0
 
         # Bconv
         l = self.bconv
@@ -72,8 +70,11 @@ class BinaryConvBNBST(chainer.Chain, CLink):
 
         text = "\n".join(text)+'\n'
         ftext = "void {name}(uint8_t* input, uint8_t* output){{\n"
-        ftext += "  fused_conv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {n}, {w}, {h}, {num_f}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {flat_output});\n}}\n\n"
-        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw, kh=kh, sw=sw, sh=sh, pw=pw, ph=ph, flat_output=fo)
+        ftext += "  bconv_layer(input, {name}_bconv_W, output, {name}_bconv_b, {name}_bn_gamma, {name}_bn_beta, {name}_bn_mean, {name}_bn_std, {m}, {num_f}, {w}, {h}, {n}, {kw}, {kh}, {sw}, {sh}, {pw}, {ph}, {pl_w}, {pl_h}, {pl_sw}, {pl_sh}, {pl_pw}, {pl_ph});\n}}\n\n"
+        ftext = ftext.format(name=name, m=m, n=n, w=w, h=h, num_f=num_f, kw=kw,
+                             kh=kh, sw=sw, sh=sh, pw=pw, ph=ph, pl_w=pl_w,
+                             pl_h=pl_h, pl_sw=pl_sw, pl_sh=pl_sh, pl_pw=pl_pw,
+                             pl_ph=pl_ph)
         text += ftext
 
         return text
