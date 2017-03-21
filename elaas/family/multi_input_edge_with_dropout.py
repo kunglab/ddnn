@@ -10,7 +10,9 @@ from chainer_sequential.binary_link import *
 from chainer import functions as F
 
 class MultiInputEdgeDropoutFamily:
-    def __init__(self, folder="_models/multi_input_edge", prefix=None, input_dims=3, output_dims=3, batchsize=10, ninputs=2, merge_function="max_pool_concat", resume=True, drop_comm_train=0, drop_comm_test=0):
+    def __init__(self, folder="_models/multi_input_edge", prefix=None, input_dims=3, output_dims=3,
+                 batchsize=10, ninputs=2, merge_function="max_pool_concat", resume=True,
+                 drop_comm_train=0, drop_comm_test=0):
         self.ninputs = ninputs
         self.folder = folder
         self.prefix = prefix
@@ -54,7 +56,7 @@ class MultiInputEdgeDropoutFamily:
         model = MultiInputSequential(self.ninputs, merge_function=self.merge_function)
         for i in range(self.ninputs):
             model.add_input(input_model)
-        
+
         # Local branch
         local_branch = Sequential()
         #local_branch.add(Linear(None, self.output_dims))
@@ -62,7 +64,7 @@ class MultiInputEdgeDropoutFamily:
         if self.merge_function in ['concat', 'concat_avg_pool', 'concat_max_pool']:
             local_branch.add(BinaryLinearBNSoftmax(None, self.output_dims))
         model.add_local(local_branch)
-        
+
         # Edge branches
         #for i in range(nlayers_edge):
         #    if i == 0:
@@ -73,7 +75,7 @@ class MultiInputEdgeDropoutFamily:
         #    else:
         #        nfilters = nfilters_edge
         #    model.add(BinaryConvPoolBNBST(nfilters, nfilters_edge, 3, 1, 1, 3, 1, 1))
-        #        
+        #
         #    #model.add(Convolution2D(nfilters, nfilters_edge, 3, 1, 1))
         #    #model.add(Activation('relu'))
         #    #model.add(max_pooling_2d(3,1,1))
@@ -81,12 +83,12 @@ class MultiInputEdgeDropoutFamily:
         #    #model.add(Activation('relu'))
         #    # Note: should we move pool to before batch norm like in binary?
         #
-        #edge_branch = Sequential() 
+        #edge_branch = Sequential()
         ##edge_branch.add(Linear(None, self.output_dims))
         ##edge_branch.add(BatchNormalization(self.output_dims))
         #edge_branch.add(BinaryLinearBNSoftmax(None, self.output_dims))
         #model.add(edge_branch)
-        
+
         # Cloud branches
         for i in range(nlayers_cloud):
             if i == 0:
@@ -103,7 +105,7 @@ class MultiInputEdgeDropoutFamily:
             else:
                 nfilters = nfilters_cloud
             model.add(BinaryConvPoolBNBST(nfilters, nfilters_cloud, 3, 1, 1, 3, 1, 1))
-                
+
             #model.add(Convolution2D(nfilters, nfilters_cloud, 3, 1, 1))
             #model.add(Activation('relu'))
             #model.add(max_pooling_2d(3,1,1))
@@ -113,7 +115,7 @@ class MultiInputEdgeDropoutFamily:
         #model.add(Linear(None, self.output_dims))
         #model.add(BatchNormalization(self.output_dims))
         model.add(BinaryLinearBNSoftmax(None, self.output_dims))
-        
+
         model.build()
         return model
 
@@ -181,5 +183,5 @@ class MultiInputEdgeDropoutFamily:
         trainer = Trainer('{}/{}'.format(self.folder,name), chain, trainset,
                           testset, batchsize=self.batchsize, nepoch=nepochs, resume=self.resume, reports=reports)
         trainer.run()
-        
+
         return trainer, model, chain

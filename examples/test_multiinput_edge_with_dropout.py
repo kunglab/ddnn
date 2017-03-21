@@ -32,12 +32,13 @@ args = parser.parse_args()
 mnist = Collection('multiinput_edge_dropout_mpcc_{}'.format(args.ncams), args.save_dir, nepochs=args.epochs, verbose=args.verbose)
 
 ncams = args.ncams
-mnist.set_model_family(MultiInputEdgeDropoutFamily,ninputs=ncams,resume=False,merge_function="max_pool_concat",drop_comm_train=0.5,drop_comm_test=0.5)
+mnist.set_model_family(MultiInputEdgeDropoutFamily,ninputs=ncams,resume=False,merge_function="max_pool_concat",drop_comm_train=0.5,drop_comm_test=0.5, input_dims=3)
 
-train, test = get_mvmc_flatten(range(ncams))
-#train, test = chainer.datasets.get_cifar10(ndim=3)
-#print(train[1])
-#print(len(train[0]))
+# train, test = get_mvmc_flatten(range(ncams))
+train, test = chainer.datasets.get_cifar10(ndim=3)
+# train, test = chainer.datasets.get_mnist(ndim=3)
+# assert False
+
 #from chainer.datasets.sub_dataset import SubDataset
 #train = SubDataset(train, 0, 500)
 #test = SubDataset(train, 0, 500)
