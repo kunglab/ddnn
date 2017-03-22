@@ -24,29 +24,28 @@ class AttrDict(dict):
         self.__dict__ = self
 
 class MNISTDropout(object):
-    def run(dtrain,dtest):        
+    def run(dtrain, dtest):
         args = AttrDict(**dict(
             save_dir="_models",
             iters=1,
-            epochs=10,
-            bootstrap_epochs=10,
+            epochs=2,
+            bootstrap_epochs=2,
             ncams=1,
             verbose=True
         ))
 
         mnist = Collection('multiinput_edge_dropout_mpcc_{}'.format(args.ncams), args.save_dir, nepochs=args.epochs, verbose=args.verbose)
-
         ncams = args.ncams
-        mnist.set_model_family(MultiInputEdgeDropoutFamily,ninputs=ncams,resume=False,merge_function="max_pool_concat",drop_comm_train=dtrain,drop_comm_test=dtest, input_dims=1, output_dims=10)
-
+        mnist.set_model_family(MultiInputEdgeDropoutFamily, ninputs=ncams, resume=False,
+                               merge_function="max_pool_concat", drop_comm_train=dtrain,
+                               drop_comm_test=dtest, input_dims=1, output_dims=10)
         train, test = get_mnist()
-
         mnist.add_trainset(train)
         mnist.add_testset(test)
         mnist.set_searchspace(
-            nfilters_embeded=[32],
+            nfilters_embeded=[4],
             nlayers_embeded=[2],
-            nfilters_cloud=[32],
+            nfilters_cloud=[4],
             nlayers_cloud=[2],
             lr=[1e-3],
             branchweight=[.1],
@@ -54,11 +53,11 @@ class MNISTDropout(object):
         )
 
         # switch chooser
-        mnist.set_chooser(deepopt.chooser.EpochChooser(k=5))
+        # mnist.set_chooser(deepopt.chooser.EpochChooser(k=5))
 
         # currently optimize based on the validation accuracy of the main model
         traces = mnist.train(niters=args.iters, bootstrap_nepochs=args.bootstrap_epochs)
-        return traces        
+        return traces.y
 
 
 if __name__ == '__main__':
