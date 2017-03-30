@@ -18,10 +18,10 @@ Our paper is available [here]()
 
 If you use this model or codebase, please cite:
 ```bibtex
-@article{mcdanelembedded,
-  title={Embedded Binarized Neural Networks},
-  author={McDanel, Bradley and Teerapittayanon, Surat and Kung, HT},
-  jornal={Proceedings of the 2017 International Conference on Embedded Wireless Systems and Networks},
+@article{teerapittayanondistributed,
+  title={Distributed Deep Neural Networks over the Cloud, the Edge and End Devices},
+  author={Teerapittayanon, Surat and McDanel, Bradley and Kung, HT},
+  jornal={Proceedings of the 37th IEEE International Conference on Distributed Computing Systems},
   year={2017}
 }
 ```
