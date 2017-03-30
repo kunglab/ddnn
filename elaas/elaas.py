@@ -8,7 +8,7 @@ from chainer_sequential.binary.utils import binary_util as bu
 from chainer.training import extensions
 import chainer
 
-import errno    
+import errno
 def mkdir_p(path):
     try:
         os.makedirs(path)
@@ -23,7 +23,7 @@ class Collection(object):
         # create the folder if it does not exist
         if not os.path.exists("_models"):
             mkdir_p(path)
-        
+
         self.name = name
         self.path = path
 
@@ -81,14 +81,15 @@ class Collection(object):
 
             # re-evaluate the result, TODO: reeval from previous epoch as well
             result = trainer.evaluate()
-            
+
             if result.get('main/branch0exit') is not None and point.get("target_branch0exit") is not None:
                 while result['main/branch0exit'] < point["target_branch0exit"]:
-                    print("trying at exit %", result['main/branch0exit'], chain.ent_Ts[0])
-                    chain.ent_Ts[0]+=0.01
+                    if self.verbose:
+                        print("trying at exit %", result['main/branch0exit'], chain.ent_Ts[0])
+                    chain.ent_Ts[0] += 0.01
                     result = trainer.evaluate()
                     result['ent_T'] = chain.ent_Ts[0]
-                
+
             meta = {}
             for k,v in result.iteritems():
                 if hasattr(v,'tolist'):
@@ -180,7 +181,7 @@ class Collection(object):
 
     def generate_c_old(self, in_shape, **kwargs):
         return self.model.generate_c(in_shape, **kwargs)
-    
+
     def generate_c(self, save_file, in_shape):
         c_code = self.model.generate_c(in_shape)
         save_dir = os.path.join(os.path.split(save_file)[:-1])[0]

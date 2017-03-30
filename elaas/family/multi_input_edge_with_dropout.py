@@ -97,10 +97,8 @@ class MultiInputEdgeDropoutFamily:
                 else:
                     nfilters = nfilters_embeded_last
                 if self.drop_comm_train>0:
-                    print("self.drop_comm_train", self.drop_comm_train)
                     model.add(dropout_comm_train(self.drop_comm_train))
                 if self.drop_comm_test>0:
-                    print("self.drop_comm_test", self.drop_comm_test)
                     model.add(dropout_comm_test(self.drop_comm_test))
             else:
                 nfilters = nfilters_cloud
