@@ -139,8 +139,18 @@ class MultiInputEdgeDropoutFamily:
         chain = MultiInputChain(branchweight=branchweight, ent_T=ent_T)
         chain.add_sequence(model)
         chain.setup_optimizers('smorms3', lr)
+        self.chain = chain
+        self.model = model
         return chain, model
-
+    
+    def classify(self, **kwargs):
+        # call self.chain(x) to pass data through network
+        return
+    
+    def intermediate(self, **kwargs):
+        # call self.intermediate(x) to pass data through network
+        return
+    
     def get_name(self, **kwargs):
         if self.prefix is not None:
             name = "{}_".format(self.prefix)
