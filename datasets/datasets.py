@@ -11,7 +11,7 @@ def get_mvmc(cam=None, tr_percent=0.5):
     if cam is None:
         cam = np.arange(6)
 
-    url = 'https://www.dropbox.com/s/uk8c6iymy8nprc0/MVMC.npz'
+    url = 'https://www.dropbox.com/s/rofaov8tgqhh6jv/MVMC.npz'
     base_dir = get_dataset_directory('mvmc/')
     path = os.path.join(base_dir, 'mvmc.npz')
 
@@ -27,19 +27,8 @@ def get_mvmc(cam=None, tr_percent=0.5):
     return train, test
 
 
-#from chainer.dataset.dataset_mixin import DatasetMixin
-#class Dataset(DatasetMixin):
-#    def __init__(self, items):
-#        self.items = items
-#        self.numItems = len(items[-1])
-#    def __len__(self):
-#        return self.numItems
-#    def get_example(self,i):
-#        return tuple([item[i] for item in self.items])
-
 def get_mvmc_flatten_eval(cam):
-    
-    url = 'https://www.dropbox.com/s/uk8c6iymy8nprc0/MVMC.npz'
+    url = 'https://www.dropbox.com/s/rofaov8tgqhh6jv/MVMC.npz'
     base_dir = get_dataset_directory('mvmc/')
     path = os.path.join(base_dir, 'mvmc.npz')
 
