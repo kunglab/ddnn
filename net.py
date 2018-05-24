@@ -87,11 +87,13 @@ class DDNN(nn.Module):
     def forward(self, x):
         B = x.shape[0]
         hs, predictions = [], []
+        # run each device model
         for i, device_model in enumerate(self.device_models):
             h, prediction = device_model(x[:, i])
             hs.append(h)
             predictions.append(prediction)
 
+        # aggregate device models (concat)
         h = torch.cat(hs, dim=1)
 
         # dropout half of devices (training)
@@ -101,6 +103,7 @@ class DDNN(nn.Module):
                 idxs = idxs.cuda()
             h[:, idxs][:self.num_devices//2] = 0
 
+        # run cloud model
         h = self.cloud_model(h)
         h = self.pool(h)
         prediction = self.classifier(h.view(B, -1))

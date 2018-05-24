@@ -32,6 +32,7 @@ def train(model, train_loader, optimizer, num_devices):
         optimizer.zero_grad()
         predictions = model(data)
         total_loss = 0
+        # for each prediction (num_devices + 1 for cloud), add to loss
         for i, prediction in enumerate(predictions):
             loss = F.cross_entropy(prediction, target)
             model_losses[i] += loss.sum()*len(target)
