@@ -55,14 +55,14 @@ def get_fashion_mnist(dataset_root, batch_size, is_cuda=True):
                             transforms.RandomCrop(32, padding=2),
                             transforms.ToTensor(),
                             transforms.Normalize((0.1307,), (0.3081,)),
-                            Partition(2, 2),
+                            Partition(3, 2),
                         ]))
     test = FashionMNIST(os.path.join(dataset_root, 'fashion_mnist'), train=False, download=True, 
                         transform=transforms.Compose([
                             transforms.Pad(2),
                             transforms.ToTensor(),
                             transforms.Normalize((0.1307,), (0.3081,)),
-                            Partition(2, 2),
+                            Partition(3, 2),
                         ]))
     train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size,
                                                shuffle=True, **kwargs)
@@ -74,19 +74,19 @@ def get_fashion_mnist(dataset_root, batch_size, is_cuda=True):
 
 def get_cifar10(dataset_root, batch_size, is_cuda=True):
     kwargs = {'num_workers': 4, 'pin_memory': True} if is_cuda else {}
-    train = datasets.CIFAR10(os.path.join(dataset_root, 'cifar10'), train=True,
+    train = datasets.CIFAR10(os.path.join(dataset_root, 'cifar10'), train=True, download=True,
                         transform=transforms.Compose([
                             transforms.RandomCrop(32, padding=4),
                             transforms.RandomHorizontalFlip(),
                             transforms.ToTensor(),
                             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
-                            Partition(2, 2),
+                            Partition(3, 2),
                         ]))
-    test = datasets.CIFAR10(os.path.join(dataset_root, 'cifar10'), train=False, download=False, 
+    test = datasets.CIFAR10(os.path.join(dataset_root, 'cifar10'), train=False, download=True, 
                         transform=transforms.Compose([
                             transforms.ToTensor(),
                             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
-                            Partition(2, 2),
+                            Partition(3, 2),
                         ]))
     train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size,
                                                shuffle=True, drop_last=False, **kwargs)
