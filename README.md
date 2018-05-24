@@ -4,13 +4,27 @@ We propose distributed deep neural networks (DDNNs) over distributed computing h
 
 ## Dependencies
 
-This library is dependent on Python 2.7+ and [Chainer](http://chainer.org/). Please install Chainer 1.17+ before starting.
+This library is dependent on Python 3.5 and [pytorch](https://pytorch.org/). 
 
-```
-pip install chainer
-```
 
 ## Quick Start
+Currently, just using standard image datasets (e.g., MNIST/CIFAR-10). Each image is partitioned into smaller sub images. Working on adding dataset in paper.
+
+To train a model (with 6 devices and aggregation in cloud):
+```
+python train.py --dataset-root <path to datasets> --dataset <mnist or cifar10> --output models/model.pth --epochs 50
+```
+
+Experiments for Figure 8 and 10 in the paper:
+```
+python evaluate.py --dataset-root <path to datasets> --dataset <mnist or cifar10> --model_path models/model.pth
+```
+
+To run with pretrained MNIST model:
+```
+python evaluate.py --dataset-root <path to datasets> --dataset mnist --model_path models/mnist.pth
+```
+
 
 ## Paper
 
