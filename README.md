@@ -12,17 +12,17 @@ Currently, just using standard image datasets (e.g., MNIST/CIFAR-10). Each image
 
 To train a model (with 6 devices and aggregation in cloud):
 ```
-python train.py --dataset-root <path to datasets> --dataset <mnist or cifar10> --output models/model.pth --epochs 50
+python train.py --dataset <mnist or cifar10> --output models/model.pth
 ```
 
 Experiments for Figure 8 and 10 in the paper:
 ```
-python evaluate.py --dataset-root <path to datasets> --dataset <mnist or cifar10> --model_path models/model.pth
+python evaluate.py --dataset <mnist or cifar10> --model_path models/model.pth
 ```
 
 To run with pretrained MNIST model:
 ```
-python evaluate.py --dataset-root <path to datasets> --dataset mnist --model_path models/mnist.pth
+python evaluate.py --dataset mnist --model_path models/mnist.pth
 ```
 
 
