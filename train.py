@@ -89,11 +89,11 @@ def train_model(model, model_path, train_loader, test_loader, lr, epochs, num_de
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='DDNN Example')
-    parser.add_argument('--dataset-root', required=True, help='dataset root folder')
+    parser.add_argument('--dataset-root', default='datasets/', help='dataset root folder')
     parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--epochs', type=int, default=20, metavar='N',
-                        help='number of epochs to train (default: 20)')
+    parser.add_argument('--epochs', type=int, default=50, metavar='N',
+                        help='number of epochs to train (default: 50)')
     parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
                         help='learning rate (default: 0.1)')
     parser.add_argument('--dataset', default='mnist', help='dataset name')

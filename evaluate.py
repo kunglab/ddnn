@@ -28,7 +28,7 @@ def test_outage(model, test_loader, num_devices, outages):
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='DDNN Evaluation')
-    parser.add_argument('--dataset-root', required=True, help='dataset root folder')
+    parser.add_argument('--dataset-root', default='datasets/', help='dataset root folder')
     parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--dataset', default='mnist', help='dataset name')
@@ -54,7 +54,7 @@ if __name__ == '__main__':
         acc = test_outage(model, test_loader, num_devices, outages)
         print('Missing Device(s) {}: {:.4f}'.format(outages, acc))
 
-    for i in range(1, num_devices):
+    for i in range(1, num_devices + 1):
         outages = list(range(i, num_devices))
         acc = test_outage(model, test_loader, num_devices, outages)
         print('Missing Device(s) {}: {:.4f}'.format(outages, acc))
