@@ -4,7 +4,7 @@ We propose distributed deep neural networks (DDNNs) over distributed computing h
 
 ## Dependencies
 
-This library is dependent on Python 3.5 and [pytorch](https://pytorch.org/). 
+This library is dependent on Python 3.6 and [pytorch](https://pytorch.org/) 0.4.0. 
 
 
 ## Quick Start
@@ -25,18 +25,18 @@ To run with pretrained MNIST model:
 python evaluate.py --dataset mnist --model_path models/mnist.pth
 
 Output:
-Missing Device(s) [0]: 90.1100
-Missing Device(s) [1]: 88.9800
-Missing Device(s) [2]: 85.2200
-Missing Device(s) [3]: 72.9600
-Missing Device(s) [4]: 96.7000
-Missing Device(s) [5]: 94.2800
-Missing Device(s) [1, 2, 3, 4, 5]: 10.2900
-Missing Device(s) [2, 3, 4, 5]: 16.9800
-Missing Device(s) [3, 4, 5]: 40.4100
-Missing Device(s) [4, 5]: 88.4200
-Missing Device(s) [5]: 94.2800
-Missing Device(s) []: 99.1500
+Missing Device(s) [0]: 98.5200
+Missing Device(s) [1]: 99.1500
+Missing Device(s) [2]: 78.7000
+Missing Device(s) [3]: 86.9000
+Missing Device(s) [4]: 87.0600
+Missing Device(s) [5]: 98.6100
+Missing Device(s) [1, 2, 3, 4, 5]: 10.1500
+Missing Device(s) [2, 3, 4, 5]: 10.1800
+Missing Device(s) [3, 4, 5]: 59.7200
+Missing Device(s) [4, 5]: 83.3300
+Missing Device(s) [5]: 98.6100
+Missing Device(s) []: 99.1700
 ```
 
 
