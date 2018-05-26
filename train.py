@@ -5,13 +5,6 @@ import os
 from tqdm import tqdm
 
 import torch
-use_cuda = torch.cuda.is_available()
-if use_cuda:
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
-FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
-Tensor = FloatTensor
-
 import torch.backends.cudnn as cudnn
 cudnn.benchmark = True 
 
@@ -22,28 +15,30 @@ from torch.autograd import Variable
 import datasets
 import net
 
-
 def train(model, train_loader, optimizer, num_devices):
     model.train()
     model_losses = [0]*(num_devices + 1)
     for batch_idx, (data, target) in enumerate(tqdm(train_loader, leave=False)):
-        data, target = data.cuda(), target.cuda()
+        if torch.cuda.is_available():
+            data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
         predictions = model(data)
         total_loss = 0
+
         # for each prediction (num_devices + 1 for cloud), add to loss
         for i, prediction in enumerate(predictions):
             loss = F.cross_entropy(prediction, target)
             model_losses[i] += loss.sum()*len(target)
             total_loss += loss
+
         total_loss.backward()
         optimizer.step()
 
     N = len(train_loader.dataset)
-    loss_str = ', '.join(['dev-{}: {:.4f}'.format(i, loss.data[0] / N)
+    loss_str = ', '.join(['dev-{}: {:.4f}'.format(i, loss.item() / N)
                         for i, loss in enumerate(model_losses[:-1])])
-    print('Train Loss:: {}, cloud-{:.4f}'.format(loss_str, model_losses[-1].data[0] / N))
+    print('Train Loss:: {}, cloud-{:.4f}'.format(loss_str, model_losses[-1].item() / N))
 
     return model_losses
  
@@ -57,9 +52,9 @@ def test(model, test_loader, num_devices):
         data, target = Variable(data), Variable(target)
         predictions = model(data)
         for i, prediction in enumerate(predictions):
-            loss = F.cross_entropy(prediction, target, size_average=False).data[0]
+            loss = F.cross_entropy(prediction, target, size_average=False).item()
             pred = prediction.data.max(1, keepdim=True)[1]
-            correct = pred.eq(target.data.view_as(pred)).long().cpu().sum()
+            correct = (pred.view(-1) == target.view(-1)).long().sum().item()
             num_correct[i] += correct
             model_losses[i] += loss
 
@@ -115,4 +110,6 @@ if __name__ == '__main__':
     num_devices = x.shape[1]
     in_channels = x.shape[2]
     model = net.DDNN(in_channels, 10, num_devices)
+    if args.cuda:
+        model = model.cuda()
     train_model(model, args.output, train_loader, test_loader, args.lr, args.epochs, num_devices)

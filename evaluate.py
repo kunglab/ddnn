@@ -16,9 +16,9 @@ def test_outage(model, test_loader, num_devices, outages):
         data, target = Variable(data), Variable(target)
         predictions = model(data)
         cloud_pred = predictions[-1]
-        loss = F.cross_entropy(cloud_pred, target, size_average=False).data[0]
+        loss = F.cross_entropy(cloud_pred, target, size_average=False).item()
         pred = cloud_pred.data.max(1, keepdim=True)[1]
-        correct = pred.eq(target.data.view_as(pred)).long().cpu().sum()
+        correct = (pred.view(-1) == target.view(-1)).long().sum().item()
         num_correct += correct
 
     N = len(test_loader.dataset)

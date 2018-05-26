@@ -1,11 +1,5 @@
 from __future__ import print_function
 import torch
-use_cuda = torch.cuda.is_available()
-if use_cuda:
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
-FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
-Tensor = FloatTensor
 
 import torch.nn as nn
 
@@ -97,7 +91,7 @@ class DDNN(nn.Module):
         # dropout half of devices (training)
         if self.training:
             idxs = torch.randperm(self.num_devices) 
-            if torch.cuda.is_available:
+            if torch.cuda.is_available():
                 idxs = idxs.cuda()
             h[:, idxs][:self.num_devices//2] = 0
 

@@ -2,7 +2,7 @@ import os
 
 from torchvision import datasets, transforms
 import torch
-from util import Partition, RandomCrops
+from util import Partition 
 
 
 class FashionMNIST(datasets.MNIST):
