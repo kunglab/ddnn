@@ -36,7 +36,6 @@ def get_mnist(dataset_root, batch_size, is_cuda=True):
                         ]))
     test = datasets.MNIST(os.path.join(dataset_root, 'mnist'), train=False, download=True, 
                         transform=transforms.Compose([
-                            transforms.RandomCrop(32, padding=2),
                             transforms.ToTensor(),
                             transforms.Normalize((0.1307,), (0.3081,)),
                             Partition(3, 2),
