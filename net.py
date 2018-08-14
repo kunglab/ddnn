@@ -87,14 +87,6 @@ class DDNN(nn.Module):
             predictions.append(prediction)
 
         h = torch.cat(hs, dim=1)
-
-        # dropout half of devices (training)
-        if self.training:
-            idxs = torch.randperm(self.num_devices) 
-            if torch.cuda.is_available():
-                idxs = idxs.cuda()
-            h[:, idxs][:self.num_devices//2] = 0
-
         h = self.cloud_model(h)
         h = self.pool(h)
         prediction = self.classifier(h.view(B, -1))
