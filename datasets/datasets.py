@@ -107,7 +107,7 @@ def get_mvmc_flatten(cam=None, tr_percent=0.5):
     if cam is None:
         cam = np.arange(6).tolist()
 
-    url = 'https://www.dropbox.com/s/uk8c6iymy8nprc0/MVMC.npz'
+    url = 'https://www.dropbox.com/s/rofaov8tgqhh6jv/MVMC.npz'
     base_dir = get_dataset_directory('mvmc/')
     path = os.path.join(base_dir, 'mvmc.npz')
 
